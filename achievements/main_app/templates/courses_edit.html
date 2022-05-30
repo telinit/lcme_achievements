@@ -1,0 +1,7 @@
+{% load static %}
+{% load crispy_forms_tags %}
+
+<form action="/courses/{{ form.instance.id }}/edit" method="POST">
+    {% csrf_token %}
+    {{ form | crispy }}
+</form>

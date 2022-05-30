@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% load static %}
+
+
+{% block content %}
+<h1>Список учащихся</h1>
+
+<table class="table student_list">
+    <thead>
+        <tr>
+            <th scope="col">ID</th>
+            <th scope="col">ФИО</th>
+            <th scope="col">Площадка</th>
+            <th scope="col">Предметы</th>
+            <th scope="col">Семинары</th>
+            <th scope="col">Олимпиады</th>
+            <th scope="col">Научные работы</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for student in students %}
+        <tr
+                onclick="document.location = '/students/{{student.id}}';"
+                class="item"
+        >
+            <th scope="row">{{student.id}}</th>
+            <td><a href="/students/{{student.id}}"> {{student.full_name}}</a></td>
+            <td>{{student.department}}</td>
+            <td>{{student.courses}}</td>
+            <td>{{student.seminars}}</td>
+            <td>{{student.olympiads}}</td>
+            <td>{{student.projects}}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+
+{% endblock %}

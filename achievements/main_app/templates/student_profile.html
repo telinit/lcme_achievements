@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+{% load static %}
+
+
+
+{% block content %}
+<h1>Учащийся {{user.last_name|capfirst}} {{user.first_name|capfirst}} {{user.middle_name|capfirst}}</h1>
+
+<h2>Общие данные</h2>
+<div class="student_common_info">
+    <div>
+        <span class="key">Имя:</span>
+        <span class="val">{{ user.first_name|capfirst }}</span>
+    </div>
+
+    <div>
+        <span class="key">Фамилия:</span>
+        <span class="val">{{ user.last_name|capfirst }}</span>
+    </div>
+
+    <div>
+        <span class="key">Отчество:</span>
+        <span class="val">{{ user.middle_name|capfirst }}</span>
+    </div>
+
+    <div>
+        <span class="key">Площадка:</span>
+        <span class="val">{{ user.get_education_department }}</span>
+    </div>
+</div>
+
+<h2>Данные об обучении</h2>
+<div class="student_education">
+    {% if educations %}
+        <table class="table table-striped table-hover course_list">
+            <thead>
+                <tr>
+                    <th scope="col">Площадка</th>
+                    <th scope="col">Поступление (класс)</th>
+                    <th scope="col">Отчисление (класс)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for edu in educations %}
+                <tr>
+                    <th>{{edu.department.name}}</th>
+                    <td>{{edu.start_year}} ({{edu.start_class}})</td>
+                    <td>{{edu.finish_year}} ({{edu.finish_class}})</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="lead">(Данных нет)</p>
+    {% endif %}
+
+</div>
+
+<h2>Данные о прослушанных курсах</h2>
+<div class="student_courses">
+    {% if course_participations %}
+        <table class="table table-striped table-hover course_list">
+            <thead>
+                <tr>
+                    <th scope="col">Название курса</th>
+                    <th scope="col">Раздел</th>
+                    <th scope="col">Предмет</th>
+                    <th scope="col">Дата окончания</th>
+                    <th scope="col">Количество часов</th>
+                    <th scope="col">Результат экзаменов</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cp in course_participations %}
+                <tr>
+                    <th scope="col">{{cp.course.name}}</th>
+                    <td scope="col">{{cp.course.chapter}}</td>
+                    <td scope="col">{{cp.course.subject}}</td>
+                    <td scope="col">{{cp.finished}}</td>
+                    <td scope="col">{{cp.hours}}</td>
+                    <td scope="col">{{cp.mark}}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="lead">(Данных нет)</p>
+    {% endif %}
+
+</div>
+
+<h2>Данные о семинарах</h2>
+<div class="student_seminars">
+    {% if seminar_participations %}
+        <table class="table table-striped table-hover course_list">
+            <thead>
+                <tr>
+                    <th scope="col">Название семинара</th>
+                    <th scope="col">Количество часов</th>
+                    <th scope="col">Преподаватель</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sem in seminar_participations %}
+                <tr>
+                    <th>{{sem.seminar.name}}</th>
+                    <td>{{sem.hours}}</td>
+                    <td>{{sem.teacher.full_name}}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="lead">(Данных нет)</p>
+    {% endif %}
+
+</div>
+
+<h2>Данные о проектах</h2>
+<div class="student_projects">
+    {% if project_participations %}
+        <table class="table table-striped table-hover course_list">
+            <thead>
+                <tr>
+                    <th scope="col">Название проекта</th>
+                    <th scope="col">Место проведения</th>
+                    <th scope="col">Руководитель</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for proj in project_participations %}
+                <tr>
+                    <th>{{proj.project.name}}</th>
+                    <td>{{proj.project.location}}</td>
+                    <td>{{proj.curator.full_name}}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="lead">(Данных нет)</p>
+    {% endif %}
+</div>
+
+<h2>Данные об олимпиадах</h2>
+<div class="student_olympiads">
+    {% if olympiad_participations %}
+        <table class="table table-striped table-hover course_list">
+            <thead>
+                <tr>
+                    <th scope="col">Название олимпиады</th>
+                    <th scope="col">Этап</th>
+                    <th scope="col">Дата участия</th>
+                    <th scope="col">Звание</th>
+                    <th scope="col">Награда</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ol in olympiad_participations %}
+                <tr>
+                    <th>{{ol.olympiad.name}}</th>
+                    <td>{{ol.olympiad.stage}}</td>
+                    <td>{{ol.finished}}</td>
+                    <td>{{ol.title}}</td>
+                    <td>{{ol.prize}}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="lead">(Данных нет)</p>
+    {% endif %}
+
+</div>
+
+{% endblock %}

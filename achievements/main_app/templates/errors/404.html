@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% load static %}
+
+
+
+{% block content %}
+<div class="row">
+    <div class="col"></div>
+    <div class="col-auto text-center">
+        <h1 class="">Похоже, что по вашему запросу ничего не найдено.</h1>
+        <p class="lead">Проверьте правильность адреса страницы или попробуйте позднее.</p>
+        <img class="" src="{% static '1.jpg' %}" alt="My image">
+    </div>
+    <div class="col"></div>
+</div>
+{% endblock %}

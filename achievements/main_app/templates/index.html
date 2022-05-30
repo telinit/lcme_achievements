@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% load static %}
+
+
+
+{% block content %}
+    <div class="row p-3">
+        <p class="lead col-7"> Для перехода к интересующей вас информации воспользуйтесь меню сверху.</p>
+        <div class="col-5">
+            <h5>Статистика:</h5>
+            <table class="main_stats">
+                <tr><td class="key"><strong>Учащиеся: </strong></td><td class="val">{{stats.students}}</td></tr>
+                <tr><td class="key"><strong>Курсы: </strong></td><td class="val">{{stats.courses}}</td></tr>
+                <tr><td class="key"><strong>Проекты: </strong></td><td class="val">{{stats.projects}}</td></tr>
+                <tr><td class="key"><strong>Олимпиады: </strong></td><td class="val">{{stats.olympiads}}</td></tr>
+                <tr><td class="key"><strong>Семинары: </strong></td><td class="val">{{stats.seminars}}</td></tr>
+            </table>
+        </div>
+    </div>
+
+{% endblock %}

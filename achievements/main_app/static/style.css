@@ -1,0 +1,31 @@
+.student_list tr.item, .course_list tr.item {
+    cursor: pointer;
+}
+
+.student_common_info .key {
+    font-weight: bold;
+    min-width: 100px;
+    display: inline-block;
+}
+
+.student_education, .student_common_info, .student_courses, .student_seminars, .student_projects, .student_olympiads {
+    padding-left: 25px;
+    padding-bottom: 50px;
+}
+
+.main_stats {
+    margin-left: 25px;
+}
+
+.main_stats .key {
+    text-align: right;
+    padding-right: 10px;
+}
+
+form.data_import div * {
+    margin-left: 25px;
+}
+
+form.data_import div label, form.data_import div button {
+    margin-left: initial;
+}

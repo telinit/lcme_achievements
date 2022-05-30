@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+    <h1>Импорт данных</h1>
+    <p class="lead">Импорт завершен</p>
+    <div>
+        {% for res in results %}
+            <div>
+                 <pre>{{res}}</pre>
+            </div>
+        {% endfor %}
+    </div>
+    <a href="/import" class="btn btn-primary">Назад к импорту</a>
+{% endblock %}
