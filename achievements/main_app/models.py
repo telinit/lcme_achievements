@@ -73,9 +73,9 @@ class Education(models.Model):
     student         = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Учащийся")
     department      = models.ForeignKey(Department, verbose_name="Площадка", on_delete=models.CASCADE)
     start_date      = models.DateField("Дата начала обучения", )
-    start_class     = models.IntegerField("Класс начала обучения", )
+    start_class     = models.CharField("Класс начала обучения", max_length=255)
     finish_date     = models.DateField("Дата окончания обучения", )
-    finish_class    = models.IntegerField("Класс окончания обучения", )
+    finish_class    = models.CharField("Класс окончания обучения", max_length=255)
 
     def __str__(self):
         return f"{self.student}, {self.department}: {self.start_year} класс, {self.start_class} год -- {self.finish_class} класс, {self.finish_year} год"
