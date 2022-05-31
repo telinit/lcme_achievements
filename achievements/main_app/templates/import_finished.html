@@ -3,13 +3,23 @@
 
 {% block content %}
     <h1>Импорт данных</h1>
-    <p class="lead">Импорт завершен</p>
-    <div>
-        {% for res in results %}
-            <div>
-                 <pre>{{res}}</pre>
-            </div>
-        {% endfor %}
-    </div>
+    {% if not error %}
+        <p class="lead">Импорт завершен успешно</p>
+        <div>
+            {% for res in results %}
+                <div>
+                     <pre>{{res}}</pre>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="lead">Импорт завершен с ошибкой. Проверьте правильность входных данных или попробуйте позднее.</p>
+        <div class="alert alert-danger">
+            <code>
+                {{ error }}
+            </code>
+        </div>
+
+    {% endif %}
     <a href="/import" class="btn btn-primary">Назад к импорту</a>
 {% endblock %}

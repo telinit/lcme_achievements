@@ -17,7 +17,7 @@ class User(AbstractUser):
     def get_education_department(self):
         deps = Education.objects \
             .filter(student=self.id) \
-            .order_by(F('start_year') - F('finish_year'))
+            .order_by(-F('finish_year'))
 
         dep = deps[0].department if deps else "(нет)"
 
@@ -72,9 +72,9 @@ class Department(models.Model):
 class Education(models.Model):
     student         = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Учащийся")
     department      = models.ForeignKey(Department, verbose_name="Площадка", on_delete=models.CASCADE)
-    start_year      = models.IntegerField("Год начала обучения", )
+    start_date      = models.DateField("Дата начала обучения", )
     start_class     = models.IntegerField("Класс начала обучения", )
-    finish_year     = models.IntegerField("Год окончания обучения", )
+    finish_date     = models.DateField("Дата окончания обучения", )
     finish_class    = models.IntegerField("Класс окончания обучения", )
 
     def __str__(self):

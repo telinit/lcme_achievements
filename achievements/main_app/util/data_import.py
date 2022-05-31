@@ -12,7 +12,8 @@ def cap_first(s):
 def transliterate(s: str) -> str:
     eng = ['a', 'b', 'v', 'g', 'd', 'e', 'j', 'z', 'i',
            'j', 'k', 'l', 'm', 'n', 'o', 'p', 'r', 's', 't',
-           'u', 'f', 'h', 'c', 'ch', 'sh', 'sh', '\'', 'i', '\'', 'e', 'yu', 'ya', '_', 'yo']
+           'u', 'f', 'h', 'c', 'ch', 'sh', 'sh', '\'', 'i',
+           '\'', 'e', 'yu', 'ya', '_', 'yo']
 
     def tr(c1: str):
         i = ord(c1.lower()) - ord('а')
@@ -203,12 +204,185 @@ def import_course(data):
 
 
 def import_seminar(data):
-    pass
+    from datetime import datetime
+
+    # Fields
+    # "Фамилия", "Имя", "Отчество",
+    # "Название семинара", "Предмет", "Количество часов",
+    # "Оценка/зачёт", "Начало", "Завершение", "Место проведения",
+    # "Фамилия преподавателя", "Имя преподавателя", "Отчество преподавателя"
+
+    for key in data:
+        if data[key].strip() == '' and key != 'Оценка/зачёт':
+            raise DataFormatException(f'Пустое поле: {key}, строка: {data}')
+
+    location_raw = cap_first(data["Место проведения"].strip())
+    subject_raw = cap_first(data["Предмет"].strip())
+
+    student = user_get_or_create(data)
+    teacher = user_get_or_create(data, "Фамилия преподавателя", "Имя преподавателя", "Отчество преподавателя")
+    subject = subject_get_or_create(subject_raw)
+    location = location_get_or_create(location_raw)
+
+    seminar = Seminar.objects.filter(
+        name=cap_first(data["Название семинара"].strip()),
+        location=location,
+        subject=subject
+    )
+
+    if not seminar:
+        seminar = Seminar(
+            name=cap_first(data["Название семинара"].strip()),
+            location=location,
+            subject=subject
+        )
+        seminar.save()
+    else:
+        seminar = seminar[0]
+
+    sp = SeminarParticipation.objects.filter(
+        student=student,
+        started=datetime.strptime(data["Начало"].strip(), "%d.%m.%Y"),
+        finished=datetime.strptime(data["Завершение"].strip(), "%d.%m.%Y"),
+        seminar=seminar,
+        hours=int(data["Количество часов"].strip()),
+        teacher=teacher,
+        mark=data["Оценка/зачёт"].strip()
+    )
+
+    if not sp:
+        sp = SeminarParticipation(
+            student=student,
+            started=datetime.strptime(data["Начало"].strip(), "%d.%m.%Y"),
+            finished=datetime.strptime(data["Завершение"].strip(), "%d.%m.%Y"),
+            seminar=seminar,
+            hours=int(data["Количество часов"].strip()),
+            teacher=teacher,
+            mark=data["Оценка/зачёт"].strip()
+        )
+        sp.save()
+    else:
+        sp = sp[0]
+
+    return [student, teacher, subject, location, seminar, sp]
 
 
 def import_project(data):
-    pass
+    from datetime import datetime
+
+    # Fields
+    # "Фамилия", "Имя", "Отчество",
+    # "Название проекта", "Место проведения", "Предмет",
+    # "Начало", "Завершение",
+    # "Фамилия руководителя", "Имя руководителя", "Отчество руководителя"
+
+    for key in data:
+        if data[key].strip() == '':
+            raise DataFormatException(f'Пустое поле: {key}, строка: {data}')
+
+    location_raw = cap_first(data["Место проведения"].strip())
+    subject_raw = cap_first(data["Предмет"].strip())
+
+    student = user_get_or_create(data)
+    curator = user_get_or_create(data, "Фамилия руководителя", "Имя руководителя", "Отчество руководителя")
+    subject = subject_get_or_create(subject_raw)
+    location = location_get_or_create(location_raw)
+
+    project = Project.objects.filter(
+        name=cap_first(data["Название проекта"].strip()),
+        location=location,
+        subject=subject
+    )
+
+    if not project:
+        project = Project(
+            name=cap_first(data["Название проекта"].strip()),
+            location=location,
+            subject=subject
+        )
+        project.save()
+    else:
+        project = project[0]
+
+    pp = ProjectParticipation.objects.filter(
+        student=student,
+        started=datetime.strptime(data["Начало"].strip(), "%d.%m.%Y"),
+        finished=datetime.strptime(data["Завершение"].strip(), "%d.%m.%Y"),
+        project=project,
+        curator=curator,
+    )
+
+    if not pp:
+        pp = ProjectParticipation(
+            student=student,
+            started=datetime.strptime(data["Начало"].strip(), "%d.%m.%Y"),
+            finished=datetime.strptime(data["Завершение"].strip(), "%d.%m.%Y"),
+            project=project,
+            curator=curator,
+        )
+        pp.save()
+    else:
+        pp = pp[0]
+
+    return [student, curator, subject, location, project, pp]
 
 
 def import_olympiad(data):
-    pass
+    from datetime import datetime
+
+    # Fields
+    # "Фамилия", "Имя", "Отчество",
+    # "Этап", "Название конкурса / олимпиады",
+    # "Начало", "Завершение", "Место проведения",
+    # "Звание", "Награда", "В составе команды"
+
+    for key in data:
+        if data[key].strip() == '' and key not in ['Этап', 'Звание', 'Награда', 'В составе команды']:
+            raise DataFormatException(f'Пустое поле: {key}, строка: {data}')
+
+    location_raw = cap_first(data["Место проведения"].strip())
+
+    student = user_get_or_create(data)
+    location = location_get_or_create(location_raw)
+
+    olympiad = Olympiad.objects.filter(
+        name=cap_first(data["Название конкурса / олимпиады"].strip()),
+        location=location,
+        stage=cap_first(data["Этап"].strip()),
+    )
+
+    if not olympiad:
+        olympiad = Olympiad(
+            name=cap_first(data["Название конкурса / олимпиады"].strip()),
+            location=location,
+            stage=cap_first(data["Этап"].strip()),
+        )
+        olympiad.save()
+    else:
+        olympiad = olympiad[0]
+
+    op = OlympiadParticipation.objects.filter(
+        olympiad=olympiad,
+        student=student,
+        started=datetime.strptime(data["Начало"].strip(), "%d.%m.%Y"),
+        finished=datetime.strptime(data["Завершение"].strip(), "%d.%m.%Y"),
+        title=cap_first(data["Звание"].strip()),
+        prize=cap_first(data["Награда"].strip()),
+        is_team_member=data["В составе команды"].strip().upper() == 'ДА'
+    )
+
+    if not op:
+        op = OlympiadParticipation(
+            olympiad=olympiad,
+            student=student,
+            started=datetime.strptime(data["Начало"].strip(), "%d.%m.%Y"),
+            finished=datetime.strptime(data["Завершение"].strip(), "%d.%m.%Y"),
+            title=cap_first(data["Звание"].strip()),
+            prize=cap_first(data["Награда"].strip()),
+            is_team_member=data["В составе команды"].strip().upper() == 'ДА'
+        )
+        op.save()
+    else:
+        op = op[0]
+
+    return [student, location, olympiad, op]

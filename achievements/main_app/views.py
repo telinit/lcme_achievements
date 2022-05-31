@@ -1,4 +1,5 @@
 from django.core import serializers
+from django.db import transaction
 from django.db.models import F, Count
 from django.http import HttpResponse
 from django.shortcuts import render
@@ -78,23 +79,28 @@ def import_(request):
                 csv_data: str = form.cleaned_data['data_content']
                 csv_rows = csv.DictReader(csv_data.splitlines(), delimiter='\t')
                 results = []
-                if form.cleaned_data['data_type'] == 0:
-                    for edu in csv_rows:
-                        results += import_education(edu)
-                elif form.cleaned_data['data_type'] == 1:
-                    for course in csv_rows:
-                        import_course(course)
-                elif form.cleaned_data['data_type'] == 2:
-                    for sem in csv_rows:
-                        import_seminar(sem)
-                elif form.cleaned_data['data_type'] == 3:
-                    for proj in csv_rows:
-                        import_project(proj)
-                elif form.cleaned_data['data_type'] == 4:
-                    for ol in csv_rows:
-                        import_olympiad(ol)
-                else:
-                    pass
+
+                try:
+                    with transaction.atomic():
+                        if form.cleaned_data['data_type'] == 0:
+                            for edu in csv_rows:
+                                results += import_education(edu)
+                        elif form.cleaned_data['data_type'] == 1:
+                            for course in csv_rows:
+                                results += import_course(course)
+                        elif form.cleaned_data['data_type'] == 2:
+                            for sem in csv_rows:
+                                results += import_seminar(sem)
+                        elif form.cleaned_data['data_type'] == 3:
+                            for proj in csv_rows:
+                                results += import_project(proj)
+                        elif form.cleaned_data['data_type'] == 4:
+                            for ol in csv_rows:
+                                results += import_olympiad(ol)
+                        else:
+                            pass  # TODO
+                except DataFormatException as e:
+                    return render(request, 'import_finished.html', {'error': e})
 
                 return render(request, 'import_finished.html', {'results': results})
             else:
@@ -113,6 +119,8 @@ def student_profile(request, id):
     user = User.objects.filter(id=id)
     if not user:
         return render(request, "errors/404.html", {})
+    else:
+        user = user[0]
     edu = Education.objects.filter(student__id=id)
     cp = CourseParticipation.objects.filter(student__id=id)
     sp = SeminarParticipation.objects.filter(student__id=id)

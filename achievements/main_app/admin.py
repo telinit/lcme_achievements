@@ -33,9 +33,9 @@ class SubjectAdmin(admin.ModelAdmin):
 
 @admin.register(Education)
 class EducationAdmin(admin.ModelAdmin):
-    list_display = ['student', 'department', 'start_year', 'finish_year']
-    list_filter = ('department', 'start_year', 'finish_year')
-    search_fields = ['student', 'department', 'start_year', 'finish_year']
+    list_display = ['student', 'department', 'start_date', 'finish_date']
+    list_filter = ('department', 'start_date', 'finish_date')
+    search_fields = ['student', 'department', 'start_date', 'finish_date']
 
 
 @admin.register(Course)
