@@ -46,3 +46,6 @@ deploy:
   stage: deploy
   script:
     - python3 manage.py runserver 0.0.0.0:8000
+  environment:
+    name: production
+    url: https://results.lnmo.ru
