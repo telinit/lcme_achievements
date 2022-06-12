@@ -1,0 +1,22 @@
+version: "3.3"
+
+services:
+  postgres:
+    image: postgres
+    volumes:
+      - /var/results-lnmo-ru/data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+  web:
+    build: .
+    command: /code/run_server.sh
+    ports:
+      - "8015:8000"
+    environment:
+      - POSTGRES_NAME=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    depends_on:
+      - db
