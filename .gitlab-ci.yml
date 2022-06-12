@@ -50,7 +50,7 @@ deploy-2-production:
   tags:
     - docker
   script:
-    - echo TODO: Migrate, run
+    - "echo TODO: Migrate, run"
   environment:
     name: production
     url: https://results.lnmo.ru
