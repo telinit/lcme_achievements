@@ -10,7 +10,8 @@ default:
   tags:
     - docker
   services:
-    - postgres
+    - name: postgres
+      alias: db
   cache:
     paths:
       - ~/.cache/pip/
