@@ -7,6 +7,8 @@ variables:
 
 default:
   image: python:3
+  tags:
+    - docker
   services:
     - postgres
   cache:
@@ -17,6 +19,8 @@ default:
 
 
 migrations:
+  tags:
+    - docker
   stage: build
   script:
     - python3 manage.py makemigrations
@@ -26,6 +30,8 @@ migrations:
 
 
 django-tests:
+  tags:
+    - docker
   stage: test
   script:
     - python3 manage.py test
