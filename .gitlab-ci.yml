@@ -1,13 +1,4 @@
-image: docker
-
-services:
-  - docker:dind
-
 variables:
-  DOCKER_DRIVER: overlay2
-  DOCKER_TLS_CERTDIR: "/certs"
-  REGISTRY_GROUP_PROJECT: $CI_REGISTRY/root/gitlab-ci-dind-example
-  # some other vars
   POSTGRES_DB: $POSTGRES_DB
   POSTGRES_NAME: $POSTGRES_NAME
   POSTGRES_ROOT_PASSWORD: $POSTGRES_ROOT_PASSWORD
@@ -23,24 +14,27 @@ stages:
 before_script:
   - docker login -u $CI_REGISTRY_USER -p $CI_JOB_TOKEN $CI_REGISTRY
 
+after_script:
+  - docker logout $CI_REGISTRY
+
 build-image:
   stage: build
   tags: 
-    - docker
+    - bare
   script:
     - docker build -t ${CI_REGISTRY_IMAGE}:latest -t ${CI_REGISTRY_IMAGE}:${VERSION_TAG}  .
 
 test-image:
   stage: test
   tags:
-    - docker
+    - bare
   script:
     - docker run ${CI_REGISTRY_IMAGE}:latest python "cd achievements && python manage.py test && python manage.py check"
 
 push-image:
   stage: push
   tags:
-    - docker
+    - bare
   script:
     - docker push ${CI_REGISTRY_IMAGE}:latest
     - docker push ${CI_REGISTRY_IMAGE}:${VERSION_TAG}
@@ -48,7 +42,7 @@ push-image:
 deploy-2-production:
   stage: deploy
   tags:
-    - docker
+    - bare
   script:
     - "echo TODO: Migrate, run"
   environment:
