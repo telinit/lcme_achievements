@@ -15,7 +15,7 @@ before_script:
   - docker login -u $CI_REGISTRY_USER -p $CI_JOB_TOKEN $CI_REGISTRY
 
 after_script:
-  - docker logout $CI_REGISTRY
+  - docker logout $CI_REGISTRY || true
 
 build-image:
   stage: build
