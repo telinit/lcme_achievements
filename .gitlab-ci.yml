@@ -1,0 +1,31 @@
+variables:
+  POSTGRES_DB: $POSTGRES_DB
+  POSTGRES_NAME: $POSTGRES_DB
+  POSTGRES_ROOT_PASSWORD: $POSTGRES_PASS
+  POSTGRES_USER: $POSTGRES_USER
+  POSTGRES_PASSWORD: $POSTGRES_PASS
+
+default:
+  image: python:3
+  services:
+    - postgres
+  cache:
+    paths:
+      - ~/.cache/pip/
+  before_script:
+    - pip3 install -r requirements.txt
+
+
+migrations:
+  stage: build
+  script:
+    - python3 manage.py makemigrations
+    # - python3 manage.py makemigrations myapp
+    - python3 manage.py migrate
+    - python3 manage.py check
+
+
+django-tests:
+  stage: test
+  script:
+    - python3 manage.py test
