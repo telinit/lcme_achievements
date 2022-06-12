@@ -15,6 +15,7 @@ default:
     paths:
       - ~/.cache/pip/
   before_script:
+    - cd achievements
     - pip3 install -r requirements.txt
 
 
@@ -23,6 +24,7 @@ migrations:
     - docker
   stage: build
   script:
+    - cd achievements
     - python3 manage.py makemigrations
     # - python3 manage.py makemigrations myapp
     - python3 manage.py migrate
@@ -34,4 +36,14 @@ django-tests:
     - docker
   stage: test
   script:
+    - cd achievements
     - python3 manage.py test
+
+
+deploy:
+  tags:
+    - docker
+  stage: deploy
+  script:
+    - cd achievements
+    - python3 manage.py runserver 0.0.0.0:8000
