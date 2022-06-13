@@ -51,4 +51,13 @@ deploy-2-production:
   environment:
     name: production
     url: https://results.lnmo.ru
+    on_stop: stop-deploy-2-production
   when: manual
+
+stop-deploy-2-production:
+  script:
+    - docker-compose down
+  when: manual
+  environment:
+    name: production
+    action: stop
