@@ -23,7 +23,7 @@ build-image:
     - bare
   script:
     - env
-    - docker build -t git.lnmo.ru/lcme/achievements:latest 
+    - docker build -t git.lnmo.ru/lcme/achievements:latest .
     # -t git.lnmo.ru/lcme/achievements:${VERSION_TAG}  .
 
 test-image:
