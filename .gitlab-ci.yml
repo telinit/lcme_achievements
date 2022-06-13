@@ -55,6 +55,7 @@ deploy-2-production:
   when: manual
 
 stop-deploy-2-production:
+  stage: deploy
   script:
     - docker-compose down
   when: manual
