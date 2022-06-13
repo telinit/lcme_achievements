@@ -31,7 +31,7 @@ test-image:
   tags:
     - bare
   script:
-    - docker run git.lnmo.ru/lcme/achievements:latest "cd achievements && python manage.py test && python manage.py check"
+    - docker run git.lnmo.ru/lcme/achievements:latest /bin/sh -c "cd achievements && python manage.py test && python manage.py check"
 
 push-image:
   stage: push
