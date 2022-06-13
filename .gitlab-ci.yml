@@ -23,22 +23,22 @@ build-image:
     - bare
   script:
     - env
-    - docker build -t ${CI_REGISTRY_IMAGE}:latest -t ${CI_REGISTRY_IMAGE}:${VERSION_TAG}  .
+    - docker build -t git.lnmo.ru/lcme/achievements:latest -t git.lnmo.ru/lcme/achievements:${VERSION_TAG}  .
 
 test-image:
   stage: test
   tags:
     - bare
   script:
-    - docker run ${CI_REGISTRY_IMAGE}:latest python "cd achievements && python manage.py test && python manage.py check"
+    - docker run git.lnmo.ru/lcme/achievements:latest python "cd achievements && python manage.py test && python manage.py check"
 
 push-image:
   stage: push
   tags:
     - bare
   script:
-    - docker push ${CI_REGISTRY_IMAGE}:latest
-    - docker push ${CI_REGISTRY_IMAGE}:${VERSION_TAG}
+    - docker push git.lnmo.ru/lcme/achievements:latest
+    - docker push git.lnmo.ru/lcme/achievements:${VERSION_TAG}
 
 deploy-2-production:
   stage: deploy
