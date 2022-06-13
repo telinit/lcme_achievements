@@ -10,10 +10,10 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
   web:
-    build: .
+    image: git.lnmo.ru/lcme/achievements
     command: /code/run_server.sh
     ports:
-      - "8015:8000"
+      - "127.0.0.1:8015:8000"
     environment:
       - POSTGRES_NAME=postgres
       - POSTGRES_USER=postgres
