@@ -46,6 +46,7 @@ deploy-2-production:
   tags:
     - bare
   script:
+    - docker-compose down || true
     - docker-compose up -d
   environment:
     name: production
