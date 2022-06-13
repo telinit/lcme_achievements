@@ -23,7 +23,8 @@ build-image:
     - bare
   script:
     - env
-    - docker build -t git.lnmo.ru/lcme/achievements:latest -t git.lnmo.ru/lcme/achievements:${VERSION_TAG}  .
+    - docker build -t git.lnmo.ru/lcme/achievements:latest 
+    # -t git.lnmo.ru/lcme/achievements:${VERSION_TAG}  .
 
 test-image:
   stage: test
@@ -38,7 +39,7 @@ push-image:
     - bare
   script:
     - docker push git.lnmo.ru/lcme/achievements:latest
-    - docker push git.lnmo.ru/lcme/achievements:${VERSION_TAG}
+    # - docker push git.lnmo.ru/lcme/achievements:${VERSION_TAG}
 
 deploy-2-production:
   stage: deploy
