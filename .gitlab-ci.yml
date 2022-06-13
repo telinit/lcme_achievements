@@ -38,7 +38,7 @@ push-image:
   tags:
     - bare
   script:
-    - docker push git.lnmo.ru/lcme/achievements:latest
+    - docker push git.lnmo.ru/lcme/achievements:latest || true
     # - docker push git.lnmo.ru/lcme/achievements:${VERSION_TAG}
 
 deploy-2-production:
@@ -46,7 +46,7 @@ deploy-2-production:
   tags:
     - bare
   script:
-    - "echo TODO: Migrate, run"
+    - docker-compose up -d
   environment:
     name: production
     url: https://results.lnmo.ru
