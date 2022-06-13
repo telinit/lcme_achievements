@@ -54,6 +54,14 @@ deploy-2-production:
     on_stop: stop-deploy-2-production
   when: manual
 
+make-default-admin-production:
+  stage: deploy
+  tags:
+    - bare
+  script:
+    - docker exec achievements_web_1 /code/make_default_admin.sh
+  when: manual
+
 stop-deploy-2-production:
   stage: deploy
   script:
