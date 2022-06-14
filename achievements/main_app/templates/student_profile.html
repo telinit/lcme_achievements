@@ -44,8 +44,8 @@
                 {% for edu in educations %}
                 <tr>
                     <th>{{edu.department.name}}</th>
-                    <td>{{edu.start_year}} ({{edu.start_class}})</td>
-                    <td>{{edu.finish_year}} ({{edu.finish_class}})</td>
+                    <td>{{edu.start_date.year}} ({{edu.start_class}})</td>
+                    <td>{{edu.finish_date.year}} ({{edu.finish_class}})</td>
                 </tr>
                 {% endfor %}
             </tbody>

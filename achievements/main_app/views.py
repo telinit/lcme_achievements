@@ -135,3 +135,11 @@ def student_profile(request, id):
         'project_participations': pp,
         'olympiad_participations': op,
     })
+
+
+def student_report(request, sid):
+    from .reports.student_report import generate_for_student
+    report = generate_for_student(sid)
+
+    return HttpResponse(report, content_type='application/vnd.oasis.opendocument.text')
+
