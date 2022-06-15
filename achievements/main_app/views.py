@@ -140,6 +140,7 @@ def student_profile(request, id):
 def student_report(request, sid):
     from .reports.student_report import generate_for_student
     report = generate_for_student(sid)
+    print(report)
 
     return HttpResponse(report, content_type='application/vnd.oasis.opendocument.text')
 

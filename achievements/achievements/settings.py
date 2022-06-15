@@ -50,6 +50,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'achievements.middlewares.LoginRequiredMiddleware.LoginRequiredMiddleware'
 ]
 
 ROOT_URLCONF = 'achievements.urls'
