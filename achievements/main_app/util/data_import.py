@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from ..models import *
 
 
@@ -117,18 +119,18 @@ def import_education(data):
     edu = Education.objects.filter(
         student__id=student.id,
         department__id=dep.id,
-        start_year=cap_first( data['Год поступления'].strip()),
+        start_date=datetime.strptime(data['Дата поступления'].strip(), "%d.%m.%Y"),
         start_class=cap_first( data['Класс поступления'].strip()),
-        finish_year=cap_first( data['Год завершения'].strip()),
+        finish_date=datetime.strptime(data['Дата завершения'].strip(), "%d.%m.%Y"),
         finish_class=cap_first( data['Класс завершения'].strip())
     )
     if not edu:
         edu = Education(
             student=student,
             department=dep,
-            start_year=cap_first( data['Год поступления'].strip()),
+            start_date=datetime.strptime(data['Дата поступления'].strip(), "%d.%m.%Y"),
             start_class=cap_first( data['Класс поступления'].strip()),
-            finish_year=cap_first( data['Год завершения'].strip()),
+            finish_date=datetime.strptime(data['Дата завершения'].strip(), "%d.%m.%Y"),
             finish_class=cap_first( data['Класс завершения'].strip())
         )
         edu.save()

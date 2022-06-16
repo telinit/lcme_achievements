@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% load static %}
+
+
+
+{% block content %}
+<h1>Печать зачетных книжек</h1>
+<h2>Сформировать зачетные книжки для выпускников по году</h2>
+<div class="col-sm-5">
+    {% for y in education_years %}
+        <div>
+             <a href="/print/year/{{y}}" class="btn btn-outline-primary m-2 text-start" role="button">{{y}} год выпуска</a>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

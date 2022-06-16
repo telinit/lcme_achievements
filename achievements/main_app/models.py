@@ -17,7 +17,7 @@ class User(AbstractUser):
     def get_education_department(self):
         deps = Education.objects \
             .filter(student=self.id) \
-            .order_by(-F('finish_year'))
+            .order_by(-F('finish_date'))
 
         dep = deps[0].department if deps else "(нет)"
 
@@ -78,7 +78,8 @@ class Education(models.Model):
     finish_class    = models.CharField("Класс окончания обучения", max_length=255)
 
     def __str__(self):
-        return f"{self.student}, {self.department}: {self.start_year} класс, {self.start_class} год -- {self.finish_class} класс, {self.finish_year} год"
+        return f"{self.student}, {self.department}: {self.start_class} класс, {self.start_date.year} год -- " \
+               f"{self.finish_class} класс, {self.finish_date.year} год"
 
     class Meta:
         verbose_name = "обучение"

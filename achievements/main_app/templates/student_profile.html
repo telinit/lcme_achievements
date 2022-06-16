@@ -6,28 +6,39 @@
 {% block content %}
 <h1>Учащийся {{user.last_name|capfirst}} {{user.first_name|capfirst}} {{user.middle_name|capfirst}}</h1>
 
-<h2>Общие данные</h2>
-<div class="student_common_info">
-    <div>
-        <span class="key">Имя:</span>
-        <span class="val">{{ user.first_name|capfirst }}</span>
-    </div>
 
-    <div>
-        <span class="key">Фамилия:</span>
-        <span class="val">{{ user.last_name|capfirst }}</span>
-    </div>
+<div class="row">
 
-    <div>
-        <span class="key">Отчество:</span>
-        <span class="val">{{ user.middle_name|capfirst }}</span>
-    </div>
+    <div class="student_common_info col">
+        <h2>Общие данные</h2>
+        <div>
+            <span class="key">Имя:</span>
+            <span class="val">{{ user.first_name|capfirst }}</span>
+        </div>
 
-    <div>
-        <span class="key">Площадка:</span>
-        <span class="val">{{ user.get_education_department }}</span>
+        <div>
+            <span class="key">Фамилия:</span>
+            <span class="val">{{ user.last_name|capfirst }}</span>
+        </div>
+
+        <div>
+            <span class="key">Отчество:</span>
+            <span class="val">{{ user.middle_name|capfirst }}</span>
+        </div>
+
+        <div>
+            <span class="key">Площадка:</span>
+            <span class="val">{{ user.get_education_department }}</span>
+        </div>
+    </div>
+    <div class="col-3 p-3">
+        <div class="card card-body">
+            <a class="btn btn-primary" role="button" aria-disabled="true" href="/reports/student/{{user.id}}">Скачать зачетную книжку</a>
+        </div>
+
     </div>
 </div>
+
 
 <h2>Данные об обучении</h2>
 <div class="student_education">
@@ -44,8 +55,8 @@
                 {% for edu in educations %}
                 <tr>
                     <th>{{edu.department.name}}</th>
-                    <td>{{edu.start_year}} ({{edu.start_class}})</td>
-                    <td>{{edu.finish_year}} ({{edu.finish_class}})</td>
+                    <td>{{edu.start_date.year}} ({{edu.start_class}})</td>
+                    <td>{{edu.finish_date.year}} ({{edu.finish_class}})</td>
                 </tr>
                 {% endfor %}
             </tbody>
