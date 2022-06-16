@@ -362,11 +362,11 @@ def write_title(student_id: int, doc: OpenDocumentText):
     edu_start = min(map(lambda e: e.start_date.year, edus))
     edu_finish = max(map(lambda e: e.finish_date.year, edus))
 
-    t4 = f"{student.last_name} {student.first_name} {student.middle_name}, выпуск {edu_finish} года"
     t4_p = strings_to_breaks(
         [
             "",
-            t4
+            f"{student.last_name} {student.first_name} {student.middle_name}",
+            f"выпуск {edu_finish} года"
         ], doc.src_styles['styles']['h1_title'])
 
     doc.text.addElement(t4_p)
