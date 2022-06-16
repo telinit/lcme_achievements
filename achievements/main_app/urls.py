@@ -9,6 +9,8 @@ urlpatterns = [
     path('courses', views.courses),
     path('courses/<int:id>/edit', views.courses_edit),
     path('import', views.import_),
+    path('print', views.print_),
+    path('print/year/<int:year>', views.print_year),
     path('tasks', views.tasks),
     path('reports/student/<int:sid>', views.student_report)
 ]

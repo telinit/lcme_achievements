@@ -1,7 +1,8 @@
 from django.core import serializers
 from django.db import transaction
 from django.db.models import F, Count
-from django.http import HttpResponse
+from django.db.models.functions import ExtractYear
+from django.http import HttpResponse, FileResponse
 from django.shortcuts import render
 import csv
 
@@ -11,6 +12,8 @@ from django.template import loader
 from .forms import CourseEdit, DataImportForm
 from .models import User, Education, Course, CourseParticipation, SeminarParticipation, ProjectParticipation, \
     OlympiadParticipation, Project, Olympiad, Seminar
+from .reports.student_report import generate_document_for_many_students, document_to_odt_data, \
+    generate_document_for_student
 from .util.data_import import *
 
 
@@ -115,6 +118,34 @@ def tasks(request):
     return render(request, 'tasks.html')
 
 
+def print_(request):
+    years = set(
+        map(
+            lambda r: r['finish_date__year'],
+            Education.objects.values('finish_date__year')
+        )
+    )
+    return render(request, 'print.html', {'education_years': years})
+
+
+def print_year(request, year):
+    student_ids = set(
+        map(
+            lambda r: r['student__id'],
+            Education.objects.filter(finish_date__year=year).values('student__id')
+        )
+    )
+    doc = generate_document_for_many_students(student_ids)
+    odt = document_to_odt_data(doc)
+
+    response = FileResponse(
+        odt,
+        content_type='application/vnd.oasis.opendocument.text',
+        filename=f"Зачетки выпускников {year} года.odt"
+    )
+    return response
+
+
 def student_profile(request, id):
     user = User.objects.filter(id=id)
     if not user:
@@ -138,9 +169,14 @@ def student_profile(request, id):
 
 
 def student_report(request, sid):
-    from .reports.student_report import generate_for_student
-    report = generate_for_student(sid)
-    print(report)
+    report = document_to_odt_data(generate_document_for_student(sid))
 
-    return HttpResponse(report, content_type='application/vnd.oasis.opendocument.text')
+    student = User.objects.get(pk=sid)
+
+    response = FileResponse(
+        report,
+        content_type='application/vnd.oasis.opendocument.text',
+        filename=f"Зачетка {student.last_name} {student.first_name} {student.middle_name} {datetime.now().year} год.odt"
+    )
+    return response
 
