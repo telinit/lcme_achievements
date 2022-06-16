@@ -16,10 +16,13 @@ class User(AbstractUser):
 
     def get_education_department(self):
         deps = Education.objects \
-            .filter(student=self.id) \
-            .order_by(-F('finish_date'))
+            .filter(student=self.id)
+            #.order_by(-F('finish_date'))
 
-        dep = deps[0].department if deps else "(нет)"
+        deps = list(deps)
+        deps.sort(key=lambda d: d.finish_date)
+
+        dep = deps[-1].department if deps else "(нет)"
 
         return dep
 
