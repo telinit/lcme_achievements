@@ -1,8 +1,11 @@
 import pathlib
 import random
+import tempfile
+from datetime import datetime
 from io import StringIO, BytesIO
 from typing import List, Iterable, Any
 
+from PyPDF2 import PdfReader
 from odf.draw import Frame, Image
 from odf.element import Element
 from odf.opendocument import OpenDocumentText
@@ -50,14 +53,16 @@ def add_elements(node: Element, lst: Iterable[Element]) -> None:
 
 
 def make_table(
-        data: List[List[str]],
+        data: Iterable[Iterable[str]],
         column_width: Iterable[str] = None,
         doc: OpenDocumentText = None,
         table_style=None,
         header_style=None,
         row_style=None,
         cell_style=None,
-        p_style=None) -> Table:
+        p_style=None,
+        p_style_header=None
+    ) -> Table:
 
     table_name=f"Table_{random.randbytes(8).hex()}"
     table = Table(stylename=table_style)
@@ -73,11 +78,11 @@ def make_table(
                 final_cell_style = doc.src_styles['auto_styles']['left_table_cell']
             elif (not cell_style) and row_is_first and (not cell_is_first):
                 final_cell_style = doc.src_styles['auto_styles']['top_table_cell']
-            else:
+            elif not cell_style:
                 final_cell_style = doc.src_styles['auto_styles']['default_table_cell']
             t_cell = TableCell(stylename=final_cell_style)
             t_cell.addElement(
-                P(text=cell, stylename=p_style)
+                P(text=cell, stylename=p_style_header if p_style_header and row_is_first else p_style )
             )
             t_row.addElement(t_cell)
             cell_is_first = False
@@ -166,12 +171,18 @@ def make_styles():
 
     h1_title = Style(name="Heading 1 T", family="paragraph", parentstylename=h1)
     h1_title.addElement(
-        ParagraphProperties(textalign="center")
+        ParagraphProperties(
+            textalign="center",
+            marginbottom = "5mm"
+        )
     )
 
     h2_title = Style(name="Heading 2 T", family="paragraph", parentstylename=h2)
     h2_title.addElement(
-        ParagraphProperties(textalign="center")
+        ParagraphProperties(
+            textalign="center",
+            marginbottom="3mm"
+        )
     )
 
     body_title = Style(name="Text Body T", family="paragraph", parentstylename=body)
@@ -179,13 +190,11 @@ def make_styles():
         ParagraphProperties(textalign="center")
     )
 
-    body_bold = Style(name="Text Body Bold")
+    body_bold = Style(name="Text Body Bold", family="paragraph", parentstylename=body)
     body_bold.addElement(
         TextProperties(
             attributes={
-                'fontsize': "10pt",
                 'fontweight': "bold",
-                'fontfamily': "Lato"
             }
         )
     )
@@ -257,6 +266,13 @@ def make_styles():
         )
     )
 
+    cell_underline = Style(name="Table Cell Underlined", family="table-cell")
+    cell_underline.addElement(
+        TableCellProperties(
+            borderbottom="0.5pt solid #000000",
+        )
+    )
+
     # default_table = Style(name="Table D", family="table")
     # default_table.addElement(
     #     TableProperties(
@@ -280,7 +296,7 @@ def make_styles():
     auto_styles['left_table_cell'] = left_table_cell
     auto_styles['top_table_cell'] = top_table_cell
     auto_styles['first_table_cell'] = first_table_cell
-    #auto_styles['default_table'] = default_table
+    auto_styles['cell_underline'] = cell_underline
     auto_styles['pagelayout'] = pagelayout
     master_styles['masterpage'] = masterpage
 
@@ -371,11 +387,20 @@ def write_title(student_id: int, doc: OpenDocumentText):
 
     doc.text.addElement(t4_p)
 
+    y = datetime.now().year
+
     t5_p = strings_to_breaks(
         [
             "",
             "",
-            f"{edu_start}-{edu_finish} годы"
+            "",
+            "",
+            "",
+            "",
+            f"{edu_start}-{edu_finish} годы",
+            f"Номер документа: {student_id:04d}-{y}",
+            f"Год выдачи: {y} год",
+            "г. Санкт-Петербург"
         ],
         doc.src_styles['styles']['body_title']
     )
@@ -426,10 +451,10 @@ def write_do(student_id: int, doc: OpenDocumentText):
                 strings_to_breaks(
                     [
                         "",
-                        f"{year}-{year+1} учебный год, {year-min_year+1} год обучения, {edu.department}"
+                        f"{year}-{year+1} учебный год, {year-min_year+1} год обучения, {edu.department.name.lower()}"
                     ], doc.src_styles['styles']['h2_title'])
             )
-            table_data = []
+            table_data = [['Предмет','Часы','Оценка']]
             for c in courses_grouped[year]:
                 table_data.append([c.course.name, c.hours, c.mark])
 
@@ -437,7 +462,8 @@ def write_do(student_id: int, doc: OpenDocumentText):
                 make_table(
                     table_data,
                     doc=doc,
-                    column_width=['9cm', '2cm', '2cm']
+                    column_width=['9cm', '2cm', '2cm'],
+                    p_style_header=doc.src_styles['styles']['body_bold']
                 )
             )
     if not have_data:
@@ -486,25 +512,24 @@ def write_summer_school(student_id: int, doc: OpenDocumentText):
                 strings_to_breaks(
                     [
                         "",
-                        f"{year}-{year + 1} учебный год, {year - min_year + 1} год обучения, {edu.department}"
+                        f"{year}-{year + 1} учебный год, {year - min_year + 1} год обучения, {edu.department.name.lower()}"
                     ], doc.src_styles['styles']['h2_title'])
             )
-            table_data = []
+            table_data = [['Название','Часы','Оценка','ФИО преподавателя']]
             for c in courses_grouped[year]:
                 table_data.append([
                     c.course.name,
                     c.hours,
                     c.mark,
-                    c.teacher.last_name,
-                    c.teacher.first_name,
-                    c.teacher.middle_name
+                    f"{c.teacher.last_name} {c.teacher.first_name} {c.teacher.middle_name}"
                 ])
 
             doc.text.addElement(
                 make_table(
                     table_data,
                     doc=doc,
-                    column_width=['6cm', '1cm', '1cm', '3cm', '3cm', '3cm']
+                    column_width=['6cm', '1cm', '1cm', '9cm'],
+                    p_style_header=doc.src_styles['styles']['body_bold']
                 )
             )
 
@@ -553,23 +578,22 @@ def write_seminars(student_id: int, doc: OpenDocumentText):
                 strings_to_breaks(
                     [
                         "",
-                        f"{year}-{year + 1} учебный год, {year - min_year + 1} год обучения, {edu.department}"
+                        f"{year}-{year + 1} учебный год, {year - min_year + 1} год обучения, {edu.department.name.lower()}"
                     ], doc.src_styles['styles']['h2_title'])
             )
-            table_data = []
+            table_data = [['Название','ФИО преподавателя']]
             for c in seminars_grouped[year]:
                 table_data.append([
                     c.seminar.name,
-                    c.teacher.last_name,
-                    c.teacher.first_name,
-                    c.teacher.middle_name
+                    f"{c.teacher.last_name} {c.teacher.first_name} {c.teacher.middle_name}"
                 ])
 
             doc.text.addElement(
                 make_table(
                     table_data,
                     doc=doc,
-                    column_width=['8cm', '3cm', '3cm', '3cm']
+                    column_width=['8.5cm', '8.5cm'],
+                    p_style_header=doc.src_styles['styles']['body_bold']
                 )
             )
 
@@ -620,23 +644,22 @@ def write_projects(student_id: int, doc: OpenDocumentText):
                 strings_to_breaks(
                     [
                         "",
-                        f"{year}-{year + 1} учебный год, {year - min_year + 1} год обучения, {edu.department}"
+                        f"{year}-{year + 1} учебный год, {year - min_year + 1} год обучения, {edu.department.name.lower()}"
                     ], doc.src_styles['styles']['h2_title'])
             )
-            table_data = []
+            table_data = [['Название','ФИО руководителя']]
             for p in projects_grouped[year]:
                 table_data.append([
                     p.project.name,
-                    p.curator.last_name,
-                    p.curator.first_name,
-                    p.curator.middle_name
+                    f"{p.curator.last_name} {p.curator.first_name} {p.curator.middle_name}"
                 ])
 
             doc.text.addElement(
                 make_table(
                     table_data,
                     doc=doc,
-                    column_width=['8cm', '3cm', '3cm', '3cm']
+                    column_width=['8.5cm', '8.5cm'],
+                    p_style_header=doc.src_styles['styles']['body_bold']
                 )
             )
 
@@ -685,10 +708,10 @@ def write_olympiads(student_id: int, doc: OpenDocumentText):
                 strings_to_breaks(
                     [
                         "",
-                        f"{year}-{year + 1} учебный год, {year - min_year + 1} год обучения, {edu.department}"
+                        f"{year}-{year + 1} учебный год, {year - min_year + 1} год обучения, {edu.department.name.lower()}"
                     ], doc.src_styles['styles']['h2_title'])
             )
-            table_data = []
+            table_data = [['Название','Награда']]
             for o in olympiads_grouped[year]:
                 table_data.append([
                     o.olympiad.name + (f", {o.olympiad.stage}" if o.olympiad.stage else ""),
@@ -699,12 +722,78 @@ def write_olympiads(student_id: int, doc: OpenDocumentText):
                 make_table(
                     table_data,
                     doc=doc,
-                    column_width=['8.5cm', '8.5cm']
+                    column_width=['8.5cm', '8.5cm'],
+                    p_style_header=doc.src_styles['styles']['body_bold']
                 )
             )
 
     if not have_data:
         doc.text.addElement(P(text="Нет данных", stylename=doc.src_styles['styles']['body_title']))
+
+
+def write_padding(n: int, doc: OpenDocumentText):
+    if n < 1:
+        return
+
+    def pad_first():
+        doc.text.addElement(P(text="Примечания", stylename=doc.src_styles['styles']['h1_title_break_before']))
+        t1 = make_table(
+            map(lambda i: [''], range(39)),
+            cell_style=doc.src_styles['auto_styles']['cell_underline'],
+            doc=doc
+        )
+        doc.text.addElement(t1)
+
+    def pad_middle():
+        for i in range(n-1):
+            doc.text.addElement(P(text=" ",stylename=doc.src_styles['styles']['break_before']))
+            tn = make_table(
+                map(lambda i: [''], range(41)),
+                cell_style=doc.src_styles['auto_styles']['cell_underline'],
+                doc=doc
+            )
+            doc.text.addElement(tn)
+
+    def pad_last():
+        logo_path = pathlib.Path(
+            static_path,
+            'logo_lnmo.png'
+        ).resolve()
+        logo = doc.addPicture(str(logo_path))
+        logo_frame = Frame(
+            width="4.92cm",
+            height="4.26cm",
+            # x="5cm",
+            # y="1cm",
+            anchortype="as-char",
+            stylename=doc.src_styles['styles']['logo']
+        )
+        logo_frame.addElement(Image(href=logo))
+
+        logo_style_end = Style(
+            name="logo_style_end",
+            parentstylename=doc.src_styles['styles']['body_title'],
+            family="paragraph",
+            ##
+        )
+        logo_style_end.addElement(
+            ParagraphProperties(
+                margintop="7cm",
+                breakbefore="page"
+            )
+        )
+        doc.styles.addElement(logo_style_end)
+
+        logo_paragraph = P(stylename=logo_style_end)
+        logo_paragraph.addElement(logo_frame)
+
+        doc.text.addElement(logo_paragraph)
+
+    if n > 1:
+        pad_first()
+    for i in range(n - 2):
+        pad_middle()
+    pad_last()
 
 
 def document_to_odt_data(doc: OpenDocumentText):
@@ -713,6 +802,28 @@ def document_to_odt_data(doc: OpenDocumentText):
     buff.seek(0)
 
     return buff
+
+
+def odt_data_to_pdf_reader(odt: BytesIO) -> PdfReader:
+    odt.seek(0)
+    tmp = tempfile.NamedTemporaryFile(suffix=".odt", delete=False)
+    tmp.write(odt.read())
+    tmp.flush()
+    tmp.close()
+    tmp_path = pathlib.Path(tmp.name)
+    os.chdir(tmp_path.parent)
+    os.system(f"soffice --headless --convert-to pdf {tmp_path.name}")
+    reader = PdfReader(tmp_path.with_suffix('.pdf'))
+
+    return reader
+
+
+def document_get_missing_padding_count(doc: OpenDocumentText) -> int:
+    data = document_to_odt_data(doc)
+    pdf_r = odt_data_to_pdf_reader(data)
+    n_rem = pdf_r.numPages % 4
+
+    return 4 - n_rem
 
 
 def generate_document_for_student(id: int, document: OpenDocumentText = None):
@@ -727,6 +838,9 @@ def generate_document_for_student(id: int, document: OpenDocumentText = None):
     write_seminars(id, report)
     write_projects(id, report)
     write_olympiads(id, report)
+
+    pad = document_get_missing_padding_count(report)
+    write_padding(pad, report)
 
     return report
 

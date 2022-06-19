@@ -40,6 +40,7 @@ def index(request):
 def students(request):
     # edus = Education.objects.all().annotate(scount=Count('student_id'))
     users = User.objects.filter(education__isnull=False).distinct()
+    departments = Department.objects.all()
     students = []
     for u in users:
         students.append({
@@ -51,7 +52,14 @@ def students(request):
             'olympiads': u.get_count_olympiads(),
             'projects': u.get_count_projects(),
         })
-    return render(request, 'students.html', {'students': students})
+    return render(
+        request,
+        'students.html',
+        {
+            'students': students,
+            'departments': departments
+        }
+    )
 
 
 def courses(request):

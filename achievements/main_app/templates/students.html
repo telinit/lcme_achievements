@@ -5,6 +5,25 @@
 {% block content %}
 <h1>Список учащихся</h1>
 
+<div class="card p-2 m-2 bg-light">
+    <div class=" row">
+        <div class="col-6">
+            <label class="form-label">Площадка</label>
+            <select class="form-select" id="filter_dep" placeholder="Фильтр по площадкам" oninput="filter_changed()">
+                <option value="">Фильтр по площадке</option>
+                {% for dep in departments %}
+                    <option value="{{dep.id}}">{{dep.name}}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-6">
+            <label class="form-label">ФИО</label>
+            <input class="form-control" placeholder="Фильтр по ФИО" id="fio_filter" oninput="filter_changed()"/>
+        </div>
+    </div>
+</div>
+
+
 <table class="table student_list">
     <thead>
         <tr>
@@ -22,9 +41,10 @@
         <tr
                 onclick="document.location = '/students/{{student.id}}';"
                 class="item"
+                x-dep-id="{{student.department.id}}"
         >
             <th scope="row">{{student.id}}</th>
-            <td><a href="/students/{{student.id}}"> {{student.full_name}}</a></td>
+            <td class="fio"><a href="/students/{{student.id}}"> {{student.full_name}}</a></td>
             <td>{{student.department}}</td>
             <td>{{student.courses}}</td>
             <td>{{student.seminars}}</td>
@@ -34,6 +54,9 @@
         {% endfor %}
     </tbody>
 </table>
+
+
+<script src="{% static 'js/students.js' %}"></script>
 
 
 {% endblock %}
