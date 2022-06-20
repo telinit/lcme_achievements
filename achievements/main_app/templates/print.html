@@ -5,11 +5,22 @@
 
 {% block content %}
 <h1>Печать зачетных книжек</h1>
-<h2>Сформировать зачетные книжки для выпускников по году</h2>
+<!--<h2>Сформировать зачетные книжки для выпускников по году</h2>-->
 <div class="col-sm-5">
-    {% for y in education_years %}
+    {% for dep, years in dep_years.items %}
         <div>
-             <a href="/print/year/{{y}}" class="btn btn-outline-primary m-2 text-start" role="button">{{y}} год выпуска</a>
+            <h3 class="mt-3">{{dep.name}}</h3>
+            {% for y in years %}
+            <div class="card ms-4">
+                <div class="p-3">
+                    <h6 class="">{{y}} год выпуска</h6>
+                    <a href="/print/dep/{{dep.id}}/year/{{y}}/pdf" class="btn btn-outline-primary text-start" role="button"><i class="bi bi-file-earmark-pdf fs-4"></i>PDF</a>
+                    <a href="/print/dep/{{dep.id}}/year/{{y}}/odt" class="btn btn-outline-primary text-start " role="button"><i class="bi bi-file-earmark-text fs-4"></i>ODT</a>
+                </div>
+
+            </div>
+
+            {% endfor %}
         </div>
     {% endfor %}
 </div>

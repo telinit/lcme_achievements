@@ -396,7 +396,6 @@ def write_title(student_id: int, doc: OpenDocumentText):
             "",
             "",
             "",
-            "",
             f"{edu_start}-{edu_finish} годы",
             f"Номер документа: {student_id:04d}-{y}",
             f"Год выдачи: {y} год",
@@ -443,6 +442,9 @@ def write_do(student_id: int, doc: OpenDocumentText):
 
         course_years = list(courses_grouped.keys())
         course_years.sort()
+
+        # print(f"student_id = {student_id}")
+        # print(f"course_years = {course_years}")
 
         min_year = course_years[0]
 

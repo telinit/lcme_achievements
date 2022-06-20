@@ -1,20 +1,23 @@
+from io import BytesIO
+
 from django.core import serializers
 from django.db import transaction
 from django.db.models import F, Count
 from django.db.models.functions import ExtractYear
-from django.http import HttpResponse, FileResponse
+from django.http import HttpResponse, FileResponse, HttpResponseBadRequest
 from django.shortcuts import render
 import csv
 
 # Create your views here.
 from django.template import loader
 
-from .forms import CourseEdit, DataImportForm
+from .forms import CourseEdit
 from .models import User, Education, Course, CourseParticipation, SeminarParticipation, ProjectParticipation, \
     OlympiadParticipation, Project, Olympiad, Seminar
 from .reports.student_report import generate_document_for_many_students, document_to_odt_data, \
-    generate_document_for_student
+    generate_document_for_student, odt_data_to_pdf_reader
 from .util.data_import import *
+from .util.util import group_by_type, add_to_dict_multival_set
 
 
 def append_json_data(rec):
@@ -80,42 +83,56 @@ def courses_edit(request, id):
     else:
         HttpResponse()
 
-
 def import_(request):
     if request.method == 'POST':
         try:
-            form = DataImportForm(request.POST)
-            if form.is_valid():
-                print(form.cleaned_data)
-                csv_data: str = form.cleaned_data['data_content']
-                csv_rows = csv.DictReader(csv_data.splitlines(), delimiter='\t')
-                results = []
+            files = request.FILES.getlist('data_files')
+            results_ungrouped=[]
+            import_func_map = {
+                'education': import_education,
+                'course': import_course,
+                'seminar': import_seminar,
+                'project': import_project,
+                'olympiad': import_olympiad,
+            }
+            try:
+                with transaction.atomic():
+                    for file in files:
+                        doc = opendocument.load( file.file )
+                        parsed = doc_parse( doc )
+                        for k in parsed:
+                            for rec in parsed[k]:
+                                results_ungrouped += import_func_map[k]( rec )
+            except DataFormatException as e:
+                return render(request, 'import_finished.html', {'error': e})
 
-                try:
-                    with transaction.atomic():
-                        if form.cleaned_data['data_type'] == 0:
-                            for edu in csv_rows:
-                                results += import_education(edu)
-                        elif form.cleaned_data['data_type'] == 1:
-                            for course in csv_rows:
-                                results += import_course(course)
-                        elif form.cleaned_data['data_type'] == 2:
-                            for sem in csv_rows:
-                                results += import_seminar(sem)
-                        elif form.cleaned_data['data_type'] == 3:
-                            for proj in csv_rows:
-                                results += import_project(proj)
-                        elif form.cleaned_data['data_type'] == 4:
-                            for ol in csv_rows:
-                                results += import_olympiad(ol)
-                        else:
-                            pass  # TODO
-                except DataFormatException as e:
-                    return render(request, 'import_finished.html', {'error': e})
+            grouped = group_by_type(results_ungrouped)
+            results = []
+            type_mappings = {
+                User: {'cat': 'Пользователи'},
+                Department: {'cat': 'Площадки'},
+                Education: {'cat': 'Обучения'},
+                Subject: {'cat': 'Предметы'},
+                Location: {'cat': 'Места'},
+                Activity: {'cat': 'Деятельности'},
+                Course: {'cat': 'Курсы'},
+                Seminar: {'cat': 'Семинары'},
+                Project: {'cat': 'Проекты'},
+                Olympiad: {'cat': 'Олимпиады'},
+                CourseParticipation: {'cat': 'Участия в курсах'},
+                SeminarParticipation: {'cat': 'Участия в семинарах'},
+                ProjectParticipation: {'cat': 'Участия в проектах'},
+                OlympiadParticipation: {'cat': 'Участия в олимпиадах'},
+            }
+            for t in list(grouped.keys()):
+                unique = list( set( map(lambda x: str(x), grouped[t]) ) )
+                unique.sort()
+                mapping = dict( type_mappings[t] )
+                mapping['objects'] = unique
+                results.append( mapping )
 
-                return render(request, 'import_finished.html', {'results': results})
-            else:
-                pass
+            return render(request, 'import_finished.html', {'results': results})
+
         except Exception as e:
             raise e
     else:
@@ -127,29 +144,58 @@ def tasks(request):
 
 
 def print_(request):
-    years = set(
-        map(
-            lambda r: r['finish_date__year'],
-            Education.objects.values('finish_date__year')
+
+    dep_years_ = {}
+
+    for edu in Education.objects.all():
+        add_to_dict_multival_set(
+            dep_years_,
+            edu.department,
+            edu.finish_date.year
         )
+
+    dep_years = {}
+    for d in dep_years_:
+        s = list(dep_years_[d])
+        s.sort()
+        dep_years[d] = s
+
+    return render(
+        request,
+        'print.html',
+        {
+            'dep_years': dep_years
+        }
     )
-    return render(request, 'print.html', {'education_years': years})
 
 
-def print_year(request, year):
+def print_dep_year(request, dep, year, format_):
+    if format_ not in ['pdf', 'odt']:
+        return HttpResponseBadRequest()
+
     student_ids = set(
         map(
             lambda r: r['student__id'],
-            Education.objects.filter(finish_date__year=year).values('student__id')
+            Education.objects.filter(
+                finish_date__year=year,
+                department__id=dep
+            ).values('student__id')
         )
     )
     doc = generate_document_for_many_students(student_ids)
     odt = document_to_odt_data(doc)
 
+    if format_ == 'odt':
+        data = odt
+    else:
+        data = odt_data_to_pdf_reader( odt ).stream
+        data.seek(0)
+
+    dep_name = Department.objects.get(pk=dep).name
     response = FileResponse(
-        odt,
-        content_type='application/vnd.oasis.opendocument.text',
-        filename=f"Зачетки выпускников {year} года.odt"
+        data,
+        content_type='application/vnd.oasis.opendocument.text' if format_ == 'odt' else 'application/pdf',
+        filename=f"Зачетки выпускников {year} года, {dep_name}.{format_}"
     )
     return response
 
@@ -176,15 +222,23 @@ def student_profile(request, id):
     })
 
 
-def student_report(request, sid):
-    report = document_to_odt_data(generate_document_for_student(sid))
+def student_report(request, sid, format_):
+    if format_ not in ['pdf', 'odt']:
+        return HttpResponseBadRequest()
 
+    report = document_to_odt_data(generate_document_for_student(sid))
     student = User.objects.get(pk=sid)
 
+    if format_ == 'odt':
+        data = report
+    else:
+        data = odt_data_to_pdf_reader( report ).stream
+        data.seek(0)
+
     response = FileResponse(
-        report,
-        content_type='application/vnd.oasis.opendocument.text',
-        filename=f"Зачетка {student.last_name} {student.first_name} {student.middle_name} {datetime.now().year} год.odt"
+        data,
+        content_type='application/vnd.oasis.opendocument.text' if format_ == 'odt' else 'application/pdf',
+        filename=f"Зачетка {student.last_name} {student.first_name} {student.middle_name} {datetime.now().year} год.{format_}"
     )
     return response
 

@@ -2,24 +2,39 @@
 {% load static %}
 
 {% block content %}
-    <h1>Импорт данных</h1>
-    {% if not error %}
-        <p class="lead">Импорт завершен успешно</p>
-        <div>
-            {% for res in results %}
-                <div>
-                     <pre>{{res}}</pre>
-                </div>
-            {% endfor %}
-        </div>
-    {% else %}
-        <p class="lead">Импорт завершен с ошибкой. Проверьте правильность входных данных или попробуйте позднее.</p>
-        <div class="alert alert-danger">
-            <code>
-                {{ error }}
-            </code>
-        </div>
+<h1>Импорт данных</h1>
+{% if not error %}
+<p class="lead">Импорт завершен успешно. Уже имеющиеся записи не были созданы повторно. Список распознанных
+    объектов:</p>
+<div class="accordion" id="accordion_results">
 
-    {% endif %}
-    <a href="/import" class="btn btn-primary">Назад к импорту</a>
+    {% for obj_cat in results %}
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="heading_{{obj_cat.cat}}">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_{{obj_cat.cat}}"
+                        >
+                    {{ obj_cat.cat }}
+                </button>
+            </h2>
+            <div id="collapse_{{obj_cat.cat}}" class="accordion-collapse collapse"
+                 data-bs-parent="#accordion_results">
+                <div class="accordion-body">
+                    {% for obj in obj_cat.objects %}
+                        <p>{{obj}}</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% else %}
+<p class="lead">Импорт завершен с ошибкой. Проверьте правильность входных данных или попробуйте позднее.</p>
+<div class="alert alert-danger">
+    <code>
+        {{ error }}
+    </code>
+</div>
+
+{% endif %}
+<a href="/import" class="btn btn-primary m-3">Назад к импорту</a>
 {% endblock %}

@@ -15,34 +15,23 @@
             </a>
         </li>
         <li>Заполните необходимые таблицы</li>
-        <li>В документе выделите определенный лист полностью (Ctrl+A)</li>
-        <li>Скопируйте выделенные данные (Ctrl+C)</li>
-        <li>Вставьте данные в текстовое поле ввода ниже (Ctrl+V)</li>
-        <li>Убедитесь, что тип данных соответствует введенным данным.</li>
+        <li>Убедитесь, что таблица заполнена правильно:</li>
+        <ol>
+            <li>В полях нет лишних пробелов</li>
+            <li>Нет избыточной информации в полях таблицы</li>
+            <li>Отсутствуют лишние символы, знаки пунктуации</li>
+            <li>Запрещено изменять название листов в документе и столбцов в таблице</li>
+        </ol>
+        <li>Сохрание ваш файл. Прикрепите его к форме импорта (ниже). Можно прикрепить несколько файлов.</li>
         <li>Нажмите кнопку "Начать импорт"</li>
     </ol>
 
-    <form class="data_import" method="post" action="/import">
+    <form enctype="multipart/form-data" method="post" action="/import" class="data_import">
         {% csrf_token %}
 
         <div class="mb-3">
-            <label for="data_type" class="form-label">Тип данных</label>
-            <select class="form-select" id="data_type" name="data_type" value="-1">
-                <option value="" selected="selected"></option>
-                <option value="0">Обучение и контакты</option>
-                <option value="1">Курсы</option>
-                <option value="2">Семинары</option>
-                <option value="3">Проекты</option>
-                <option value="4">Олимпиады</option>
-            </select>
-        </div>
-        <div class="mb-3">
-            <label for="fields_required" class="form-label">Необходимые поля:</label>
-            <p id="fields_required" class="row">(Выберите тип данных)</p>
-        </div>
-        <div class="mb-3">
-            <label for="data_content" class="form-label">Данные</label>
-            <textarea class="form-control" id="data_content" name="data_content" placeholder="Введите данные в это поле" rows="6"></textarea>
+            <label for="data_files" class="form-label">Файл с данными:</label>
+            <input class="form-control" type="file" name="data_files" id="data_files" multiple oninput="$('#begin_import').removeClass('disabled')">
         </div>
         <div class="mb-3 justify-content-end row">
             <div class="col-auto m-3">
@@ -50,67 +39,4 @@
             </div>
         </div>
     </form>
-
-    <script>
-        var fields = {
-            0: ["Фамилия", "Имя", "Отчество", "Площадка",
-                "Год поступления", "Год завершения", "Класс поступления", "Класс завершения",
-                "Контактный телефон", "Контактный email"
-            ],
-            1: ["Фамилия", "Имя", "Отчество",
-                "Название", "Глава", "Предмет",
-                "Количество часов", "Начало", "Завершение",
-                "Место проведения", "Оценка/зачёт",
-                "Фамилия преподавателя", "Имя преподавателя", "Отчество преподавателя"
-            ],
-            2: ["Фамилия", "Имя", "Отчество",
-                "Название семинара", "Предмет", "Количество часов",
-                "Оценка/зачёт", "Начало", "Завершение", "Место проведения",
-                "Фамилия преподавателя", "Имя преподавателя", "Отчество преподавателя"
-            ],
-            3: ["Фамилия", "Имя", "Отчество",
-                "Название проекта", "Место проведения", "Предмет",
-                "Начало", "Завершение",
-                "Фамилия руководителя", "Имя руководителя", "Отчество руководителя"
-            ],
-            4: ["Фамилия", "Имя", "Отчество",
-                "Этап", "Название конкурса / олимпиады",
-                "Начало", "Завершение", "Место проведения",
-                "Звание", "Награда", "В составе команды"
-            ]
-        };
-
-        function validate() {
-            var dt = $("#data_type").val();
-            var res =  dt !== '' && +dt >= 0 && +dt <= 4 && $("#data_content").val() !== '';
-
-            if (res) {
-                $("#begin_import").removeClass("disabled");
-            } else {
-                $("#begin_import").addClass("disabled");
-            }
-
-            return res;
-        }
-
-        function option_click(evt) {
-                var val = $("#data_type").val();
-                var f = '<ul class="list-group col-auto">';
-                if (val !== '' && fields[val]) {
-                    for (var i = 0; i < fields[val].length; ++i)
-                        f += '<li class="list-group-item"><strong>' + fields[val][i] + "</strong></li>";
-                } else {
-                    f = "(Выберите тип данных)";
-                }
-
-                $("#fields_required").html(f + "</ul>");
-                validate();
-        }
-
-        $("#data_type option").click(option_click);
-        $("#data_content").change(validate);
-
-        option_click();
-
-    </script>
 {% endblock %}

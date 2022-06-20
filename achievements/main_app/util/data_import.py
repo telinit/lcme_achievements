@@ -1,4 +1,10 @@
+import sys
 from datetime import datetime
+
+from odf import opendocument
+from odf.element import Element
+from odf.opendocument import OpenDocumentText, OpenDocumentSpreadsheet
+from odf.table import Table, TableRow, TableCell
 
 from ..models import *
 
@@ -43,6 +49,102 @@ def generate_password(length: int = 10) -> str:
         pw += alph[i]
 
     return pw
+
+
+def get_sheet_by_idx( doc, sheetIndex ):
+    try:
+        spreadsheet = doc.spreadsheet
+    except NameError:
+        sys.stderr.write("Error: file is not a spreadsheet\n")
+        return
+
+    sheets = spreadsheet.getElementsByType( Table )
+    if sheetIndex > len( sheets ):
+        sys.stderr.write( "Error: spreadsheet has only %d sheets; requested invalid sheet %d\n" % (len( sheets ), sheetIndex + 1) )
+        return
+
+    sheet = sheets[sheetIndex]
+    return sheet
+
+
+def get_element_attribute(elem: Element, key: str) -> str:
+    for k in elem.attributes:
+        (ns, attr) = k
+        if attr == key:
+            return elem.attributes[k]
+
+
+def get_sheet_name(sheet: Element) -> str:
+    return get_element_attribute(sheet, 'name')
+
+
+def get_sheet_by_name( doc: OpenDocumentSpreadsheet, sheet_name: str ):
+    try:
+        spreadsheet = doc.spreadsheet
+    except NameError:
+        sys.stderr.write("Error: file is not a spreadsheet\n")
+        return
+
+    sheets = spreadsheet.getElementsByType( Table )
+
+    for s in sheets:
+        if get_sheet_name(s) == sheet_name:
+            return s
+
+
+record = dict[str, str]
+csv_data = list[record]
+
+
+def sheet_to_csv(sheet: Table, stop_at_empty_row=True) -> csv_data:
+    result: list[dict[str, str]] = []
+    header: list[str] = []
+    rows = sheet.getElementsByType(TableRow)
+
+    for row in rows:
+        vals: list[str] = []
+        cells = row.getElementsByType(TableCell)
+        for cell in cells:
+            rep = get_element_attribute(cell, 'number-columns-repeated')
+            if rep:
+                rep_n = int(rep)
+            else:
+                rep_n = 1
+            s = str(cell)
+            if not header and not s:
+                break
+            for i in range(rep_n):
+                if header and len(vals) >= len(header):
+                    break
+                else:
+                    vals.append(s)
+        if not header:
+            header = vals
+        else:
+            if stop_at_empty_row:
+                if all( map(lambda x: x == '', vals) ):
+                    break
+            rec: dict[str, str] = {}
+            assert len(header) == len(vals)
+            for i in range(len(header)):
+                rec[header[i]] = vals[i].strip()
+            result.append(rec)
+
+    return result
+
+
+def doc_to_csv_data(doc: OpenDocumentSpreadsheet, sheet_name: str) -> csv_data:
+    return sheet_to_csv( get_sheet_by_name( doc, sheet_name ) )
+
+
+def doc_parse(doc: OpenDocumentSpreadsheet) -> dict[str, csv_data]:
+    return {
+        'education': doc_to_csv_data(doc, '0. Общая информация'),
+        'course': doc_to_csv_data(doc, '1. Образование'),
+        'seminar': doc_to_csv_data(doc, '2. Семинары'),
+        'project': doc_to_csv_data(doc, '3. Проект-исследование'),
+        'olympiad': doc_to_csv_data(doc, '4. Конкурсы и олимпиады'),
+    }
 
 
 def user_get_or_create(data, ln='Фамилия', fn='Имя', mn='Отчество'):
@@ -388,3 +490,5 @@ def import_olympiad(data):
         op = op[0]
 
     return [student, location, olympiad, op]
+
+
