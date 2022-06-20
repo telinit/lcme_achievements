@@ -26,7 +26,8 @@ SECRET_KEY = 'django-insecure-&*d$hf$m(b3-dutdwlp5-gl0a2htdjbiyb0c7_34bdrv7-hmj0
 
 # SECURITY WARNING: don't run with debug turned on in production!
 
-production = not not os.environ.get('POSTGRES_NAME')
+pn = os.environ.get('POSTGRES_NAME')
+production = pn is not None and pn != ''
 
 DEBUG = not production
 
