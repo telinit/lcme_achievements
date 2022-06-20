@@ -12,6 +12,7 @@ urlpatterns = [
     path('print', views.print_),
     path('print/dep/<int:dep>/year/<int:year>/<str:format_>', views.print_dep_year),
     path('tasks', views.tasks),
+    path('tasks/dedupe_edu', views.dedupe_edu), #
     path('print/student/<int:sid>/<str:format_>', views.student_report)
 ]
 

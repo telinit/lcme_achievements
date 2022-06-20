@@ -33,6 +33,12 @@
             <label for="data_files" class="form-label">Файл с данными:</label>
             <input class="form-control" type="file" name="data_files" id="data_files" multiple oninput="$('#begin_import').removeClass('disabled')">
         </div>
+        <div class="mb-3">
+              <input class="form-check-input" type="checkbox" value="1" id="use_old_format" name="use_old_format">
+              <label class="form-check-label" for="use_old_format">
+                  Использовать старый формат
+              </label>
+        </div>
         <div class="mb-3 justify-content-end row">
             <div class="col-auto m-3">
                 <button type="submit" class="btn btn-primary mb-3 disabled" id="begin_import">Начать импорт</button>

@@ -1,9 +1,24 @@
 {% extends 'base.html' %}
 {% load static %}
 
-
-
 {% block content %}
+<script src="{% static '/js/tasks.js' %}"></script>
+
 <h1>Административные задачи</h1>
-<p>(В разработке)</p>
+<div class="col-lg-8">
+    <h3>Проверка дублирующихся сведений об обучении</h3>
+    <p>Данный инструмент позволяет найти и объединить повторяющиеся или идущие подряд записи об обучении на площадках. Полезно проводить после импорта "грязных" данных.</p>
+    <div class="mb-3 justify-content-end row">
+        <div class="col-auto m-3">
+            <div class="spinner-border d-none" role="status" id="dedupe_edu_spinner"></div>
+            <button type="submit" class="btn btn-primary mb-3 fs-6" onclick="dedupe_edu()">
+                <i class="bi bi-play-fill "></i>Запустить
+            </button>
+
+        </div>
+    </div>
+    <div class="alert d-none" role="alert" id="dedupe_edu_msg">
+    </div>
+</div>
+
 {% endblock %}

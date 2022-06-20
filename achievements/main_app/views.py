@@ -1,23 +1,18 @@
-from io import BytesIO
-
 from django.core import serializers
+from django.core.files.uploadedfile import UploadedFile
 from django.db import transaction
-from django.db.models import F, Count
-from django.db.models.functions import ExtractYear
-from django.http import HttpResponse, FileResponse, HttpResponseBadRequest
+from django.http import HttpResponse, FileResponse, HttpResponseBadRequest, HttpRequest, HttpResponseForbidden, \
+    HttpResponseServerError
 from django.shortcuts import render
-import csv
-
-# Create your views here.
-from django.template import loader
 
 from .forms import CourseEdit
-from .models import User, Education, Course, CourseParticipation, SeminarParticipation, ProjectParticipation, \
-    OlympiadParticipation, Project, Olympiad, Seminar
 from .reports.student_report import generate_document_for_many_students, document_to_odt_data, \
     generate_document_for_student, odt_data_to_pdf_reader
 from .util.data_import import *
 from .util.util import group_by_type, add_to_dict_multival_set
+
+
+# Create your views here.
 
 
 def append_json_data(rec):
@@ -42,8 +37,8 @@ def index(request):
 
 def students(request):
     # edus = Education.objects.all().annotate(scount=Count('student_id'))
-    users = User.objects.filter(education__isnull=False).distinct()
-    departments = Department.objects.all()
+    users = User.objects.filter(education__isnull=False).distinct().order_by('id')
+    departments = Department.objects.all().order_by('id')
     students = []
     for u in users:
         students.append({
@@ -83,26 +78,65 @@ def courses_edit(request, id):
     else:
         HttpResponse()
 
-def import_(request):
+
+def import_combined_data(data, strict=True):
+    results = []
+
+    import_func_map = {
+        'education': import_education,
+        'course': import_course,
+        'seminar': import_seminar,
+        'project': import_project,
+        'olympiad': import_olympiad,
+    }
+
+    for k in data:
+        for rec in data[k]:
+            try:
+                func = import_func_map[k]
+                res = func(rec, strict=strict)
+                if res:
+                    results += res
+            except Exception as e:
+                if strict:
+                    raise e
+                else:
+                    pass
+
+    return results
+
+
+def import_(request: HttpRequest):
     if request.method == 'POST':
         try:
-            files = request.FILES.getlist('data_files')
+            files: Iterable[UploadedFile] = request.FILES.getlist('data_files')
+            use_old_format = request.POST.get('use_old_format')
             results_ungrouped=[]
-            import_func_map = {
-                'education': import_education,
-                'course': import_course,
-                'seminar': import_seminar,
-                'project': import_project,
-                'olympiad': import_olympiad,
-            }
+
             try:
                 with transaction.atomic():
+                    combined_data = {}
+                    parsed_data = {}
+
                     for file in files:
-                        doc = opendocument.load( file.file )
-                        parsed = doc_parse( doc )
-                        for k in parsed:
-                            for rec in parsed[k]:
-                                results_ungrouped += import_func_map[k]( rec )
+                        doc = opendocument.load(file.file)
+                        if use_old_format:
+                            parsed_data = doc_parse_old_and_ugly_format(
+                                doc,
+                                filename=file.name
+                            )
+                        else:
+                            parsed_data = doc_parse( doc )
+
+                        for k in parsed_data:
+                            if k in combined_data:
+                                combined_data[k] += parsed_data[k]
+                            else:
+                                combined_data[k] = parsed_data[k]
+
+                    combined_data['education'] = stitch_educations( combined_data['education'] )
+                    combined_data = sanitize_dict_vals(combined_data)
+                    results_ungrouped = import_combined_data(combined_data, strict=False)
             except DataFormatException as e:
                 return render(request, 'import_finished.html', {'error': e})
 
@@ -144,7 +178,6 @@ def tasks(request):
 
 
 def print_(request):
-
     dep_years_ = {}
 
     for edu in Education.objects.all():
@@ -242,3 +275,42 @@ def student_report(request, sid, format_):
     )
     return response
 
+
+def dedupe_edu(request):
+    def to_seconds(date):
+        import time
+        return time.mktime(date.timetuple())
+    try:
+        edus = Education.objects.all()
+        edus_group_by_student = {}
+        for e in edus:
+            add_to_dict_multival(edus_group_by_student, e.student.id, e)
+
+        cnt_dupes = 0
+
+        for sid in edus_group_by_student:
+            stud_edus: list[Education] = list(edus_group_by_student[sid])
+            if not stud_edus:
+                continue
+
+            stud_edus.sort(
+                key=lambda e: to_seconds(e.start_date)
+            )
+
+            head = stud_edus.pop(0)
+
+            for edu in stud_edus:
+                if head.department == edu.department:
+                    head.start_date = min(head.start_date, edu.start_date)
+                    head.finish_date = max(head.finish_date, edu.finish_date)
+                    head.save()
+                    edu.delete()
+                    cnt_dupes += 1
+                else:
+                    head = edu
+
+        return HttpResponse(f"Deduplication has finished successfully. Dupes removed: {cnt_dupes}".encode())
+    except Exception as e:
+        return HttpResponseServerError(
+            f"Error occured: {type(e).__name__}: {e}".encode()
+        )

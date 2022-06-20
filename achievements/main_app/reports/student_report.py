@@ -7,7 +7,7 @@ from typing import List, Iterable, Any
 
 from PyPDF2 import PdfReader
 from odf import opendocument
-from odf.draw import Frame, Image
+from odf.draw import Frame, Image, TextBox
 from odf.element import Element
 from odf.meta import DocumentStatistic
 from odf.opendocument import OpenDocumentText
@@ -118,6 +118,15 @@ def make_table(
 
     return table
 
+def make_frame(items: Iterable[Element], **kwargs) -> Frame:
+    f = Frame(**kwargs)
+    t = TextBox(
+        # minheight="8cm"
+    )
+    for i in items:
+        t.addElement(i)
+    f.addElement(t)
+    return f
 
 def make_styles():
     styles = {}
@@ -275,6 +284,23 @@ def make_styles():
         )
     )
 
+    frame_style = Style(
+        name="fr1",
+        family="graphic",
+        parentstylename = "Frame"
+    )
+    frame_style.addElement(
+        GraphicProperties(
+            wrap="parallel",
+            numberwrappedparagraphs = "no-limit",
+            verticalpos = "from-top",
+            verticalrel = "paragraph",
+            horizontalpos = "from-left",
+            horizontalrel = "paragraph",
+            border="none"
+        )
+    )
+
     # default_table = Style(name="Table D", family="table")
     # default_table.addElement(
     #     TableProperties(
@@ -299,6 +325,7 @@ def make_styles():
     auto_styles['top_table_cell'] = top_table_cell
     auto_styles['first_table_cell'] = first_table_cell
     auto_styles['cell_underline'] = cell_underline
+    auto_styles['frame_style'] = frame_style
     auto_styles['pagelayout'] = pagelayout
     master_styles['masterpage'] = masterpage
 
@@ -451,25 +478,40 @@ def write_do(student_id: int, doc: OpenDocumentText):
         min_year = course_years[0]
 
         for year in course_years:
-            doc.text.addElement(
-                strings_to_breaks(
+            title = strings_to_breaks(
                     [
                         "",
                         f"{year}-{year+1} учебный год, {year-min_year+1} год обучения, {edu.department.name.lower()}"
                     ], doc.src_styles['styles']['h2_title'])
-            )
-            table_data = [['Предмет','Часы','Оценка']]
-            for c in courses_grouped[year]:
-                table_data.append([f'{c.course.name}{", " if c.course.chapter != "" else ""}{c.course.chapter}', c.hours, c.mark])
 
-            doc.text.addElement(
-                make_table(
-                    table_data,
-                    doc=doc,
-                    column_width=['9cm', '2cm', '2cm'],
-                    p_style_header=doc.src_styles['styles']['body_bold']
-                )
+            table_data = [['Предмет', 'Часы', 'Оценка']]
+            for c in courses_grouped[year]:
+                table_data.append(
+                    [f'{c.course.name}{", " if c.course.chapter != "" else ""}{c.course.chapter}', c.hours, c.mark])
+
+            table = make_table(
+                table_data,
+                doc=doc,
+                column_width=['9cm', '2cm', '2cm'],
+                p_style_header=doc.src_styles['styles']['body_bold']
             )
+
+            frame = make_frame(
+                [title, table],
+                anchortype="paragraph",
+                width="13cm",
+                # height="5cm",
+                # zindex="0",
+                stylename=doc.src_styles['auto_styles']['frame_style'],
+                name="Frame_123"
+            )
+
+            frame_p = P(
+                stylename=doc.src_styles['styles']['body_title']
+            )
+            frame_p.addElement(frame)
+
+            doc.text.addElement(frame_p)
     if not have_data:
         doc.text.addElement(P(text="Нет данных", stylename=doc.src_styles['styles']['body_title']))
 
@@ -749,14 +791,13 @@ def write_padding(n: int, doc: OpenDocumentText):
         doc.text.addElement(t1)
 
     def pad_middle():
-        for i in range(n-1):
-            doc.text.addElement(P(text=" ",stylename=doc.src_styles['styles']['break_before']))
-            tn = make_table(
-                map(lambda i: [''], range(41)),
-                cell_style=doc.src_styles['auto_styles']['cell_underline'],
-                doc=doc
-            )
-            doc.text.addElement(tn)
+        doc.text.addElement(P(text=" ",stylename=doc.src_styles['styles']['break_before']))
+        tn = make_table(
+            map(lambda i: [''], range(41)),
+            cell_style=doc.src_styles['auto_styles']['cell_underline'],
+            doc=doc
+        )
+        doc.text.addElement(tn)
 
     def pad_last():
         logo_path = pathlib.Path(
