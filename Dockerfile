@@ -2,7 +2,7 @@
 FROM python:3
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-RUN apt update && apt install libreoffice-fresh
+RUN apt update && apt install libreoffice-nogui 
 WORKDIR /code
 COPY . /code
 COPY /code/fonts/lato2 /usr/local/share/fonts/
