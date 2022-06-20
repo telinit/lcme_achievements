@@ -6,8 +6,10 @@ from io import StringIO, BytesIO
 from typing import List, Iterable, Any
 
 from PyPDF2 import PdfReader
+from odf import opendocument
 from odf.draw import Frame, Image
 from odf.element import Element
+from odf.meta import DocumentStatistic
 from odf.opendocument import OpenDocumentText
 from odf.style import Style, TextProperties, GraphicProperties, PageLayoutProperties, PageLayout, MasterPage, \
     ParagraphProperties, TableCellProperties, TableColumnProperties, TableProperties
@@ -17,7 +19,7 @@ from relatorio.templates.opendocument import Template
 import os
 
 from ..models import *
-
+from ..util.data_import import get_element_attribute
 
 static_path = pathlib.Path(
         pathlib.Path(__file__).parent.parent,
@@ -458,7 +460,7 @@ def write_do(student_id: int, doc: OpenDocumentText):
             )
             table_data = [['Предмет','Часы','Оценка']]
             for c in courses_grouped[year]:
-                table_data.append([c.course.name, c.hours, c.mark])
+                table_data.append([f'{c.course.name}{", " if c.course.chapter != "" else ""}{c.course.chapter}', c.hours, c.mark])
 
             doc.text.addElement(
                 make_table(
@@ -520,7 +522,7 @@ def write_summer_school(student_id: int, doc: OpenDocumentText):
             table_data = [['Название','Часы','Оценка','ФИО преподавателя']]
             for c in courses_grouped[year]:
                 table_data.append([
-                    c.course.name,
+                    f'{c.course.name}{", " if c.course.chapter != "" else ""}{c.course.chapter}',
                     c.hours,
                     c.mark,
                     f"{c.teacher.last_name} {c.teacher.first_name} {c.teacher.middle_name}"
@@ -781,7 +783,7 @@ def write_padding(n: int, doc: OpenDocumentText):
         logo_style_end.addElement(
             ParagraphProperties(
                 margintop="7cm",
-                breakbefore="page"
+                breakbefore="page",
             )
         )
         doc.styles.addElement(logo_style_end)
@@ -790,6 +792,13 @@ def write_padding(n: int, doc: OpenDocumentText):
         logo_paragraph.addElement(logo_frame)
 
         doc.text.addElement(logo_paragraph)
+
+        spacing_bottom = strings_to_breaks(
+            ['']*15,
+            doc.src_styles['styles']['body_title'],
+        )
+        doc.text.addElement(spacing_bottom)
+        # doc.text.addElement(P(text="", stylename=doc.src_styles['styles']['break_before']))
 
     if n > 1:
         pad_first()
@@ -820,6 +829,32 @@ def odt_data_to_pdf_reader(odt: BytesIO) -> PdfReader:
     return reader
 
 
+def doc_get_page_count(doc: OpenDocumentText) -> int:
+    stats = doc.meta.getElementsByType(DocumentStatistic)
+    if stats:
+        pc = get_element_attribute(stats[0], 'page-count')
+        return int(pc)
+    else:
+        return -1
+
+"""
+    Opens the document in LibreOffice and saves it back, collecting useful meta info
+"""
+def doc_resave(doc: OpenDocumentText) -> OpenDocumentText:
+    tmp_dir = tempfile.mkdtemp()
+    os.chdir(tmp_dir)
+
+    name = 'tmp.odt'
+    tmp = open(name, 'wb')
+    doc.save( tmp )
+    tmp.flush()
+    tmp.close()
+
+    os.system(f"soffice --headless --convert-to odt {name} --outdir out")
+
+    return opendocument.load( f'out/{name}' )
+
+
 def document_get_missing_padding_count(doc: OpenDocumentText) -> int:
     data = document_to_odt_data(doc)
     pdf_r = odt_data_to_pdf_reader(data)
@@ -828,7 +863,7 @@ def document_get_missing_padding_count(doc: OpenDocumentText) -> int:
     return 4 - n_rem
 
 
-def generate_document_for_student(id: int, document: OpenDocumentText = None):
+def generate_document_for_student(id: int, document: OpenDocumentText = None, add_padding = True, padding_length = -1):
     report = document or OpenDocumentText()
 
     if not document:
@@ -841,18 +876,41 @@ def generate_document_for_student(id: int, document: OpenDocumentText = None):
     write_projects(id, report)
     write_olympiads(id, report)
 
-    pad = document_get_missing_padding_count(report)
-    write_padding(pad, report)
+    if add_padding:
+        pad = padding_length if padding_length >= 0 else document_get_missing_padding_count(report)
+        write_padding(pad, report)
 
     return report
 
 
-def generate_document_for_many_students(stud_list: Iterable[int], document: OpenDocumentText = None):
-    report = document
+def generate_document_for_many_students(stud_list: Iterable[int]):
+    sids = list(stud_list)
 
-    for sid in stud_list:
-        report = generate_document_for_student(sid, report)
-        report.text.addElement(P(text=" ",stylename=report.src_styles['styles']['break_before']))
+    tmp_dir = tempfile.mkdtemp()
+    os.chdir(tmp_dir)
+
+    # Pass 1
+    cnt = 0
+    for sid in sids:
+        doc = generate_document_for_student(sid, add_padding=False)
+        doc.save(f'{cnt}.odt')
+        cnt += 1
+
+    files = ' '.join(map(lambda i: f'{i}.odt',range(cnt)))
+    os.system(f'soffice --norestore --headless --convert-to pdf {files}')
+
+    page_counts = []
+    for i in range(cnt):
+        pdf = PdfReader(f'{i}.pdf')
+        page_counts.append( pdf.numPages )
+        os.unlink(f'{i}.pdf')
+        os.unlink(f'{i}.odt')
+
+    # Pass 2
+
+    report = None
+    for (sid, pc) in zip(sids, page_counts):
+        pad = 4 - pc % 4
+        report = generate_document_for_student(sid, report, add_padding=True, padding_length=pad)
 
     return report
-

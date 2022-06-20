@@ -125,6 +125,8 @@ def sheet_to_csv(sheet: Table, stop_at_empty_row=True) -> csv_data:
                 if all( map(lambda x: x == '', vals) ):
                     break
             rec: dict[str, str] = {}
+            if len(vals) < len(header):
+                vals += [''] * (len(header) - len(vals))
             assert len(header) == len(vals)
             for i in range(len(header)):
                 rec[header[i]] = vals[i].strip()
