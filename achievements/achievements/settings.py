@@ -27,11 +27,11 @@ SECRET_KEY = 'django-insecure-&*d$hf$m(b3-dutdwlp5-gl0a2htdjbiyb0c7_34bdrv7-hmj0
 # SECURITY WARNING: don't run with debug turned on in production!
 
 pn = os.environ.get('POSTGRES_NAME')
-production = pn is not None and pn != ''
+prod = pn is not None and pn != ''
 
-DEBUG = not production
+DEBUG = not prod
 
-ALLOWED_HOSTS = ['results.lnmo.ru'] if production else []
+ALLOWED_HOSTS = ['results.lnmo.ru'] if prod else []
 
 
 # Application definition
@@ -99,7 +99,7 @@ db_sqlite = {
 
 
 DATABASES = {
-    'default': db_postgres if production else db_sqlite
+    'default': db_postgres if prod else db_sqlite
 }
 
 
