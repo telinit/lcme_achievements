@@ -13,6 +13,8 @@ import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
+import production as production
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
@@ -23,9 +25,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-&*d$hf$m(b3-dutdwlp5-gl0a2htdjbiyb0c7_34bdrv7-hmj0'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
-ALLOWED_HOSTS = []
+production = not not os.environ.get('POSTGRES_NAME')
+
+DEBUG = not production
+
+ALLOWED_HOSTS = ['results.lnmo.ru'] if production else []
 
 
 # Application definition
@@ -77,11 +82,23 @@ WSGI_APPLICATION = 'achievements.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
+db_postgres = {
+    'ENGINE': 'django.db.backends.postgresql',
+    'NAME': os.environ.get('POSTGRES_NAME'),
+    'USER': os.environ.get('POSTGRES_USER'),
+    'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
+    'HOST': 'postgres',
+    'PORT': 5432,
+}
+
+db_sqlite = {
+    'ENGINE': 'django.db.backends.sqlite3',
+    'NAME': BASE_DIR / 'db.sqlite3',
+}
+
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': db_postgres if production else db_sqlite
 }
 
 
