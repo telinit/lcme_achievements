@@ -9,4 +9,4 @@ COPY ./fonts/lato2 /usr/share/fonts/
 RUN fc-cache --force --verbose
 RUN chmod +x /code/*.sh
 RUN pip install -r requirements.txt
-
+RUN env|sort
