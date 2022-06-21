@@ -210,6 +210,16 @@ def make_styles():
         )
     )
 
+    body_bold_center = Style(name="Text Body Bold Center", family="paragraph", parentstylename=body)
+    body_bold_center.addElement(
+        TextProperties(
+            attributes={
+                'fontweight': "bold",
+                'textalign': "center"
+            }
+        )
+    )
+
     logo = Style(name='Logo', parentstylename="Graphics", family="graphic")
     logo.addElement(
         GraphicProperties(
@@ -313,6 +323,7 @@ def make_styles():
     styles['h2'] = h2
     styles['body'] = body
     styles['body_bold'] = body_bold
+    styles['body_bold_center'] = body_bold_center
     styles['logo'] = logo
     styles['h1_title'] = h1_title
     styles['h2_title'] = h2_title
@@ -493,7 +504,7 @@ def write_do(student_id: int, doc: OpenDocumentText):
                 table_data,
                 doc=doc,
                 column_width=['9cm', '2cm', '2cm'],
-                p_style_header=doc.src_styles['styles']['body_bold']
+                p_style_header=doc.src_styles['styles']['body_bold_center']
             )
 
             frame = make_frame(
@@ -574,8 +585,8 @@ def write_summer_school(student_id: int, doc: OpenDocumentText):
                 make_table(
                     table_data,
                     doc=doc,
-                    column_width=['6cm', '1cm', '1cm', '9cm'],
-                    p_style_header=doc.src_styles['styles']['body_bold']
+                    column_width=['6cm', '1.5cm', '1.5cm', '8cm'],
+                    p_style_header=doc.src_styles['styles']['body_bold_center']
                 )
             )
 
@@ -639,7 +650,7 @@ def write_seminars(student_id: int, doc: OpenDocumentText):
                     table_data,
                     doc=doc,
                     column_width=['8.5cm', '8.5cm'],
-                    p_style_header=doc.src_styles['styles']['body_bold']
+                    p_style_header=doc.src_styles['styles']['body_bold_center']
                 )
             )
 
@@ -705,7 +716,7 @@ def write_projects(student_id: int, doc: OpenDocumentText):
                     table_data,
                     doc=doc,
                     column_width=['8.5cm', '8.5cm'],
-                    p_style_header=doc.src_styles['styles']['body_bold']
+                    p_style_header=doc.src_styles['styles']['body_bold_center']
                 )
             )
 
@@ -769,7 +780,7 @@ def write_olympiads(student_id: int, doc: OpenDocumentText):
                     table_data,
                     doc=doc,
                     column_width=['8.5cm', '8.5cm'],
-                    p_style_header=doc.src_styles['styles']['body_bold']
+                    p_style_header=doc.src_styles['styles']['body_bold_center']
                 )
             )
 
