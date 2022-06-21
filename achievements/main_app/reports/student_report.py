@@ -213,10 +213,12 @@ def make_styles():
     body_bold_center = Style(name="Text Body Bold Center", family="paragraph", parentstylename=body)
     body_bold_center.addElement(
         TextProperties(
-            attributes={
-                'fontweight': "bold",
-                'textalign': "center"
-            }
+                fontweight= "bold"
+        )
+    )
+    body_bold_center.addElement(
+        ParagraphProperties(
+            textalign="center"
         )
     )
 
@@ -503,7 +505,7 @@ def write_do(student_id: int, doc: OpenDocumentText):
             table = make_table(
                 table_data,
                 doc=doc,
-                column_width=['9cm', '2cm', '2cm'],
+                column_width=['9cm', '1cm', '3cm'],
                 p_style_header=doc.src_styles['styles']['body_bold_center']
             )
 
@@ -585,7 +587,7 @@ def write_summer_school(student_id: int, doc: OpenDocumentText):
                 make_table(
                     table_data,
                     doc=doc,
-                    column_width=['6cm', '1.5cm', '1.5cm', '8cm'],
+                    column_width=['6cm', '1.5cm', '2cm', '7.5cm'],
                     p_style_header=doc.src_styles['styles']['body_bold_center']
                 )
             )
