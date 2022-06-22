@@ -1,9 +1,14 @@
+from typing import Callable
+
 from django.core import serializers
 from django.core.files.uploadedfile import UploadedFile
 from django.db import transaction
+from django.db.models import Model
 from django.http import HttpResponse, FileResponse, HttpResponseBadRequest, HttpRequest, HttpResponseForbidden, \
     HttpResponseServerError
 from django.shortcuts import render
+from django.utils.html import escape
+from fuzzywuzzy import fuzz
 
 from .forms import CourseEdit
 from .reports.student_report import generate_document_for_many_students, document_to_odt_data, \
@@ -111,7 +116,7 @@ def import_(request: HttpRequest):
         try:
             files: Iterable[UploadedFile] = request.FILES.getlist('data_files')
             use_old_format = request.POST.get('use_old_format')
-            results_ungrouped=[]
+            results_ungrouped = []
 
             try:
                 with transaction.atomic():
@@ -126,7 +131,7 @@ def import_(request: HttpRequest):
                                 filename=file.name
                             )
                         else:
-                            parsed_data = doc_parse( doc )
+                            parsed_data = doc_parse(doc)
 
                         for k in parsed_data:
                             if k in combined_data:
@@ -134,7 +139,7 @@ def import_(request: HttpRequest):
                             else:
                                 combined_data[k] = parsed_data[k]
 
-                    combined_data['education'] = stitch_educations( combined_data['education'] )
+                    combined_data['education'] = stitch_educations(combined_data['education'])
                     combined_data = sanitize_dict_vals(combined_data)
                     results_ungrouped = import_combined_data(combined_data, strict=False)
             except DataFormatException as e:
@@ -159,11 +164,11 @@ def import_(request: HttpRequest):
                 OlympiadParticipation: {'cat': 'Участия в олимпиадах'},
             }
             for t in list(grouped.keys()):
-                unique = list( set( map(lambda x: str(x), grouped[t]) ) )
+                unique = list(set(map(lambda x: str(x), grouped[t])))
                 unique.sort()
-                mapping = dict( type_mappings[t] )
+                mapping = dict(type_mappings[t])
                 mapping['objects'] = unique
-                results.append( mapping )
+                results.append(mapping)
 
             return render(request, 'import_finished.html', {'results': results})
 
@@ -221,7 +226,7 @@ def print_dep_year(request, dep, year, format_):
     if format_ == 'odt':
         data = odt
     else:
-        data = odt_data_to_pdf_reader( odt ).stream
+        data = odt_data_to_pdf_reader(odt).stream
         data.seek(0)
 
     dep_name = Department.objects.get(pk=dep).name
@@ -265,7 +270,7 @@ def student_report(request, sid, format_):
     if format_ == 'odt':
         data = report
     else:
-        data = odt_data_to_pdf_reader( report ).stream
+        data = odt_data_to_pdf_reader(report).stream
         data.seek(0)
 
     response = FileResponse(
@@ -280,6 +285,7 @@ def dedupe_edu(request):
     def to_seconds(date):
         import time
         return time.mktime(date.timetuple())
+
     try:
         edus = Education.objects.all()
         edus_group_by_student = {}
@@ -309,8 +315,102 @@ def dedupe_edu(request):
                 else:
                     head = edu
 
-        return HttpResponse(f"Deduplication has finished successfully. Dupes removed: {cnt_dupes}".encode())
+        return HttpResponse(f"Дедупликация успешно завершена. Удалено дублей: {cnt_dupes}".encode())
     except Exception as e:
         return HttpResponseServerError(
             f"Error occured: {type(e).__name__}: {e}".encode()
         )
+
+
+def bulk_edit():
+    pass
+
+
+def find_similar_objects(request, obj_type: str, limit: int):
+    obj_type_class_map: dict[str, type] = {
+        'user': User,
+        'location': Location,
+        'department': Department,
+        'education': Education,
+        'subject': Subject,
+        'activity': Activity,
+        'course': Course,
+        'seminar': Seminar,
+        'project': Project,
+        'olympiad': Olympiad,
+        'award': Award,
+        'participation': Participation,
+        'courseparticipation': CourseParticipation,
+        'seminarparticipation': SeminarParticipation,
+        'projectparticipation': ProjectParticipation,
+        'olympiadparticipation': OlympiadParticipation
+    }
+    obj_type_str_map: dict[str, Callable[[Model], str]] = {
+        'user': User.full_name,
+        'location': Location.__str__,
+        'department': Department.__str__,
+        'education': Education.__str__,
+        'subject': Subject.__str__,
+        'activity': Activity.__str__,
+        'course': Course.__str__,
+        'seminar': Seminar.__str__,
+        'project': Project.__str__,
+        'olympiad': Olympiad.__str__,
+        'award': Award.__str__,
+        'participation': Participation.__str__,
+        'courseparticipation': CourseParticipation.__str__,
+        'seminarparticipation': SeminarParticipation.__str__,
+        'projectparticipation': ProjectParticipation.__str__,
+        'olympiadparticipation': OlympiadParticipation.__str__
+    }
+
+    if obj_type not in obj_type_str_map or obj_type not in obj_type_class_map:
+        return HttpResponseBadRequest(b'Bad object type')
+
+    obj_class = obj_type_class_map[obj_type]
+    objects: list[User] = list(obj_class.objects.all())
+
+    f_str = obj_type_str_map[obj_type]
+    results = find_nearest_objects(limit, objects, str_func=f_str)
+
+    results_objs = map(
+        lambda t: {
+            'ratio': t[0],
+            'object1_name': f_str(t[1]),
+            'object2_name': f_str(t[2]),
+            'object1_id': t[1].id,
+            'object2_id': t[2].id
+        },
+        results
+    )
+
+    return render(request, 'similar_objects.html', {'results': results_objs})
+
+
+def find_nearest_objects(
+        limit: int,
+        objects: list[models.Model],
+        str_func: Callable[[models.Model], str] = str
+) -> list[Tuple[int, models.Model, models.Model]]:
+    l = len(objects)
+    result: list[Tuple[int, models.Model, models.Model]] = []  # (ratio, object1, object2)
+    for obj_ix1 in range(l):
+        for obj_ix2 in range(obj_ix1 + 1, l):
+            ratio = fuzz.ratio(
+                str_func(objects[obj_ix1]),
+                str_func(objects[obj_ix2])
+            )
+            x = (ratio, objects[obj_ix1], objects[obj_ix2])
+
+            if len(result) == 0:
+                result.append(x)
+                continue
+            if len(result) > limit and result[-1][0] >= ratio:
+                continue
+            for i, (ratio_, object1, object2) in enumerate(result):
+                if ratio > ratio_:
+                    result.insert(i, x)
+                    if len(result) > limit:
+                        result.pop()
+                    break
+    return result

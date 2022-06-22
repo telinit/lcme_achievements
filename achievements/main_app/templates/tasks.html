@@ -20,5 +20,69 @@
     <div class="alert d-none" role="alert" id="dedupe_edu_msg">
     </div>
 </div>
+<div>
+    <h3>Поиск похожих объектов</h3>
+    <p>Данный инструмент позволяет найти "похожие" по текстовому представлению объекты.</p>
+    <div class="mx-2 mb-3 justify-content-end row col-lg-8">
+        <div class="card p-2 m-2 bg-light">
+            <div class=" row">
+                <div class="col-6">
+                    <label class="form-label">Тип объектов</label>
+                    <select class="form-select" id="find_similar_obj_type">
+                        <option value="user">Пользователь</option>
+                        <option value="location">Место</option>
+                        <option value="department">Площадка</option>
+                        <option value="education">Обучение</option>
+                        <option value="subject">Предмет</option>
+                        <option value="activity">Активность</option>
+                        <option value="course">Курс</option>
+                        <option value="seminar">Семинар</option>
+                        <option value="project">Проект</option>
+                        <option value="olympiad">Олимпиада</option>
+                        <option value="award">Награда (олимпиада)</option>
+                        <option value="participation">Участие</option>
+                        <option value="courseparticipation">Участие в курсе</option>
+                        <option value="seminarparticipation">Участие в семинаре</option>
+                        <option value="projectparticipation">Участие в проекте</option>
+                        <option value="olympiadparticipation">Участие в олимпиаде</option>
+                    </select>
+                </div>
+                <div class="col-6">
+                    <label class="form-label">Лимит записей</label>
+                    <input class="form-control" placeholder="Лимит записей" value="20" id="find_similar_limit"/>
+                </div>
+            </div>
+        </div>
+        <div class="col-auto mt-3">
+            <div class="spinner-border d-none" role="status" id="find_similar_spinner"></div>
+            <button type="submit" class="btn btn-primary mb-3 fs-6" onclick="find_similar()">
+                <i class="bi bi-play-fill "></i>Запустить
+            </button>
+
+        </div>
+    </div>
+    <div class="card p-3 me-3 d-none" role="alert" id="find_similar_msg">
+    </div>
+</div>
+
+
+<div class="modal fade" id="modal_dialog" tabindex="-1" role="dialog" >
+  <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">TITLE</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        BODY
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+<!--        <button type="button" class="btn btn-primary" onclick="save_course();">Сохранить</button>-->
+      </div>
+    </div>
+  </div>
+</div>
+
 
 {% endblock %}
