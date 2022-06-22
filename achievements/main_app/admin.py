@@ -33,6 +33,7 @@ class SubjectAdmin(admin.ModelAdmin):
 
 @admin.register(Education)
 class EducationAdmin(admin.ModelAdmin):
+    autocomplete_fields = ['student', 'department']
     list_display = ['student', 'department', 'start_date', 'finish_date']
     list_filter = ('department', 'start_date', 'finish_date')
     search_fields = [
@@ -48,6 +49,7 @@ class EducationAdmin(admin.ModelAdmin):
 
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
+    autocomplete_fields = ['location', 'subject']
     list_display = ['name', 'chapter', 'location', 'subject']
     list_filter = ('location', 'subject')
     search_fields = ['name', 'chapter', 'location__name', 'subject__name']
@@ -64,6 +66,7 @@ class CourseAdmin(admin.ModelAdmin):
 
 @admin.register(Seminar)
 class SeminarAdmin(admin.ModelAdmin):
+    autocomplete_fields = ['location', 'subject']
     list_display = ['name', 'location', 'subject']
     list_filter = ('location', 'subject')
     search_fields = ['name', 'location__name', 'subject__name']
@@ -71,6 +74,7 @@ class SeminarAdmin(admin.ModelAdmin):
 
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
+    autocomplete_fields = ['location', 'subject']
     list_display = ['name', 'location', 'subject']
     list_filter = ('location', 'subject')
     search_fields = ['name', 'location__name', 'subject__name']
@@ -78,6 +82,7 @@ class ProjectAdmin(admin.ModelAdmin):
 
 @admin.register(Olympiad)
 class OlympiadAdmin(admin.ModelAdmin):
+    autocomplete_fields = ['location']
     list_display = ['name', 'stage', 'location']
     list_filter = ('location', 'stage')
     search_fields = ['name', 'location__name', 'stage']
@@ -85,6 +90,7 @@ class OlympiadAdmin(admin.ModelAdmin):
 
 @admin.register(CourseParticipation)
 class CourseParticipationAdmin(admin.ModelAdmin):
+    autocomplete_fields = ['student', 'course', 'teacher']
     list_display = ['student', 'started', 'finished', 'course', 'teacher', 'mark']
     list_filter = ('started', 'finished', 'course', 'mark')
     search_fields = [
@@ -100,6 +106,7 @@ class CourseParticipationAdmin(admin.ModelAdmin):
 
 @admin.register(SeminarParticipation)
 class SeminarParticipationAdmin(admin.ModelAdmin):
+    autocomplete_fields = ['student', 'seminar', 'teacher']
     list_display = ['student', 'started', 'finished', 'seminar', 'teacher', 'mark']
     list_filter = ('started', 'finished', 'seminar', 'mark')
     search_fields = [
@@ -115,6 +122,7 @@ class SeminarParticipationAdmin(admin.ModelAdmin):
 
 @admin.register(ProjectParticipation)
 class ProjectParticipationAdmin(admin.ModelAdmin):
+    autocomplete_fields = ['student', 'project', 'curator']
     list_display = ['student', 'started', 'finished', 'project', 'curator']
     list_filter = ('started', 'finished', 'curator')
     search_fields = [
@@ -130,6 +138,7 @@ class ProjectParticipationAdmin(admin.ModelAdmin):
 
 @admin.register(OlympiadParticipation)
 class OlympiadParticipationAdmin(admin.ModelAdmin):
+    autocomplete_fields = ['student', 'olympiad']
     list_display = ['student', 'started', 'finished', 'olympiad']
     list_filter = ('started', 'finished', 'olympiad')
     search_fields = [
