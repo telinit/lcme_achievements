@@ -1,8 +1,24 @@
+from typing import Any
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import F
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+
+
+def adv_join(sep: Any, objs: list[Any]) -> str:
+    sep_s = str(sep)
+    res = ''
+    for o in objs:
+        if not o:
+            continue
+        if res == '':
+            res = str(o)
+        else:
+            res += sep + str(o)
+
+    return res
 
 
 class User(AbstractUser):
@@ -47,7 +63,7 @@ class User(AbstractUser):
             .count()
 
     def __str__(self):
-        return f"{self.username}: {self.full_name()}"
+        return f"{self.full_name()}"
 
 
 class Location(models.Model):
@@ -81,8 +97,7 @@ class Education(models.Model):
     finish_class    = models.CharField("Класс окончания обучения", max_length=255)
 
     def __str__(self):
-        return f"{self.student}, {self.department}: {self.start_class} класс, {self.start_date.year} год -- " \
-               f"{self.finish_class} класс, {self.finish_date.year} год"
+        return f"{self.student} ({self.start_date.year}-{self.finish_date.year})"
 
     class Meta:
         verbose_name = "обучение"
@@ -105,7 +120,7 @@ class Activity(models.Model):
     location = models.ForeignKey(Location, verbose_name="Место проведения", on_delete=models.CASCADE)
 
     def __str__(self):
-        return f"{self.name}, {self.location}"
+        return adv_join(', ', [self.name, self.location])
 
     class Meta:
         verbose_name = "активность"
@@ -120,7 +135,7 @@ class Course(Activity):
     default_class = models.IntegerField("Стандартный класс проведения", null=True)
 
     def __str__(self):
-        return f"К: {Activity.__str__(self)} - {self.subject} ({self.chapter})"
+        return adv_join(', ', [Activity.__str__(self), self.chapter])
 
     class Meta:
         verbose_name = "курс"
@@ -131,7 +146,7 @@ class Seminar(Activity):
     subject = models.ForeignKey(Subject, verbose_name="Предмет, дисциплина", on_delete=models.CASCADE)
 
     def __str__(self):
-        return f"С: {Activity.__str__(self)} - {self.subject}"
+        return adv_join(', ', [Activity.__str__(self), self.subject])
 
     class Meta:
         verbose_name = "семинар"
@@ -142,7 +157,7 @@ class Project(Activity):
     subject = models.ForeignKey(Subject, verbose_name="Предмет, дисциплина", on_delete=models.CASCADE)
 
     def __str__(self):
-        return f"П: {Activity.__str__(self)} - {self.subject}"
+        return adv_join(', ', [Activity.__str__(self), self.subject])
 
     class Meta:
         verbose_name = "проект"
@@ -153,7 +168,7 @@ class Olympiad(Activity):
     stage = models.CharField("Этап олимпиады", max_length=255, null=True)
 
     def __str__(self):
-        return f"О: {Activity.__str__(self)} - {self.stage}"
+        return adv_join(', ', [Activity.__str__(self), self.stage])
 
     class Meta:
         verbose_name = "олимпиада"
@@ -166,7 +181,9 @@ class Award(models.Model):
     is_team_member = models.BooleanField("В составе команды", null=True)
 
     def __str__(self):
-        return f"{self.title}, {self.prize}{', в составе команды' if self.is_team_member else ''}"
+        a = f'{self.title}'
+        b = f', {self.prize}' if self.prize else ''
+        return adv_join(', ', [self.title, self.prize, 'в составе команды' if self.is_team_member else None])
 
     class Meta:
         abstract = True
@@ -194,7 +211,7 @@ class CourseParticipation(Participation):
     mark = models.CharField("Итоговая оценка", max_length=255)
 
     def __str__(self):
-        return f"{Participation.__str__(self)}: {self.course}:  {self.mark}"
+        return f"{self.student}, {self.course}"
 
     class Meta:
         verbose_name = "участие в курсах"
@@ -208,7 +225,7 @@ class SeminarParticipation(Participation):
     mark = models.CharField("Итоговая оценка", max_length=255, null=True)
 
     def __str__(self):
-        return f"{Participation.__str__(self)}: {self.seminar}:  {self.teacher}"
+        return f"{self.student}, {self.seminar}"
 
     class Meta:
         verbose_name = "участие в семинарах"
@@ -220,7 +237,7 @@ class ProjectParticipation(Participation):
     curator = models.ForeignKey(User, verbose_name="Руководитель", related_name='project_curator', on_delete=models.CASCADE)
 
     def __str__(self):
-        return f"{Participation.__str__(self)}: {self.project}:  {self.curator}"
+        return f"{self.student}, {self.project}"
 
     class Meta:
         verbose_name = "участие в проектах"
@@ -231,7 +248,7 @@ class OlympiadParticipation(Participation, Award):
     olympiad = models.ForeignKey(Olympiad, verbose_name="Олимпиада",  on_delete=models.CASCADE)
 
     def __str__(self):
-        return f"{Participation.__str__(self)}: {self.olympiad}:  {Award.__str__(self)}"
+        return f"{self.student}, {self.olympiad}"
 
     class Meta:
         verbose_name = "участие в олимпиадах"
