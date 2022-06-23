@@ -642,15 +642,15 @@ def write_exams(student_id: int, doc: OpenDocumentText):
                     f"{year}-{year + 1} учебный год, {year - min_year + 1} год обучения, {edu.department.name.lower()}"
                 ], doc.src_styles['styles']['h2_title'])
 
-            table_data = [['Предмет', 'Часы', 'Оценка']]
+            table_data = [['Предмет', 'Оценка']]
             for c in courses_grouped[year]:
                 table_data.append(
-                    [f'{c.course.name}{", " if c.course.chapter != "" else ""}{c.course.chapter}', c.hours, c.mark])
+                    [f'{c.course.name}{", " if c.course.chapter != "" else ""}{c.course.chapter}', c.mark])
 
             table = make_table(
                 table_data,
                 doc=doc,
-                column_width=['9cm', '1cm', '3cm'],
+                column_width=['10cm', '3cm'],
                 p_style_header=doc.src_styles['styles']['body_bold_center'],
                 style_custom=[
                     lambda object_type, table_width, table_height, x, y, data:
