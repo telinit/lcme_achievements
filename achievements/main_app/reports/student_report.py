@@ -542,7 +542,7 @@ def write_do(student_id: int, doc: OpenDocumentText):
         # print(f"student_id = {student_id}")
         # print(f"course_years = {course_years}")
 
-        min_year = course_years[0]
+        min_year = edu.start_date.year
 
         for year in course_years:
             title = strings_to_breaks(
@@ -633,7 +633,7 @@ def write_exams(student_id: int, doc: OpenDocumentText):
         # print(f"student_id = {student_id}")
         # print(f"course_years = {course_years}")
 
-        min_year = course_years[0]
+        min_year = edu.start_date.year
 
         for year in course_years:
             title = strings_to_breaks(
@@ -719,7 +719,7 @@ def write_summer_school(student_id: int, doc: OpenDocumentText):
         course_years = list(courses_grouped.keys())
         course_years.sort()
 
-        min_year = course_years[0]
+        min_year = edu.start_date.year
 
         for year in course_years:
             title = strings_to_breaks(["",
@@ -798,7 +798,7 @@ def write_seminars(student_id: int, doc: OpenDocumentText):
         seminar_years = list(seminars_grouped.keys())
         seminar_years.sort()
 
-        min_year = seminar_years[0]
+        min_year = edu.start_date.year
 
         for year in seminar_years:
             title = strings_to_breaks(["",
@@ -875,7 +875,7 @@ def write_projects(student_id: int, doc: OpenDocumentText):
         project_years: list[int] = list(projects_grouped.keys())
         project_years.sort()
 
-        min_year = project_years[0]
+        min_year = edu.start_date.year
 
         for year in project_years:
             title = strings_to_breaks(["",
@@ -951,7 +951,7 @@ def write_olympiads(student_id: int, doc: OpenDocumentText):
         olympiad_years: list[int] = list(olympiads_grouped.keys())
         olympiad_years.sort()
 
-        min_year = olympiad_years[0]
+        min_year = edu.start_date.year
 
         for year in olympiad_years:
             title = strings_to_breaks(["",
