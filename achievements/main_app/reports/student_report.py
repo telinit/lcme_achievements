@@ -12,7 +12,7 @@ from odf.element import Element
 from odf.meta import DocumentStatistic
 from odf.opendocument import OpenDocumentText
 from odf.style import Style, TextProperties, GraphicProperties, PageLayoutProperties, PageLayout, MasterPage, \
-    ParagraphProperties, TableCellProperties, TableColumnProperties, TableProperties, StyleElement
+    ParagraphProperties, TableCellProperties, TableColumnProperties, TableProperties, StyleElement, TableRowProperties
 from odf.table import Table, TableRow, TableCell, TableColumn
 from odf.text import P, LineBreak, SoftPageBreak
 from relatorio.templates.opendocument import Template
@@ -91,10 +91,11 @@ def make_table(
                 reg_list = st_reg[1]
 
                 if not style.ownerDocument:  # The style is not registered within document. Let's register it. Otherwise - just use it.
-                    style = Style(parentstylename=style)
                     randint = random.randint(0, 0xFFFFFFFF)
-                    style.setAttribute('name', f"{style.getAttribute('name') or 'style'}_{randint}")
-                    style.setAttribute('displayname', f"{style.getAttribute('displayname') or 'style_dn'}_{randint}")
+                    style.setAttribute(
+                        'name',
+                        f'{style.getAttribute("name")}_{randint}'
+                    )
 
                     if reg_list == 'styles':
                         doc.styles.addElement(
@@ -116,7 +117,7 @@ def make_table(
     table = Table(stylename=guess_style('table', 0, 0) or table_style)
     row_is_first = True
     for y, row in zip(ints(), data):
-        t_row = TableRow(stylename=guess_style('row', 0, y) or header_style if row_is_first else row_style)
+        t_row = TableRow(stylename=guess_style('row', 0, y) or header_style if row_is_first else (guess_style('row', 0, y) or row_style))
         cell_is_first = True
         for x, cell in zip(ints(), row):
             final_cell_style = cell_style
@@ -498,10 +499,8 @@ def write_title(student_id: int, doc: OpenDocumentText):
 
 
 def write_do(student_id: int, doc: OpenDocumentText):
-    doc.text.addElement(P(text="Освоенные курсы дополнительного образования",
-                          stylename=doc.src_styles['styles']['h1_title_break_before']))
-
     have_data = False
+    title_is_written = False
 
     educations: Iterable[Education] = Education.objects.filter(student__id=student_id)
 
@@ -511,6 +510,7 @@ def write_do(student_id: int, doc: OpenDocumentText):
             student__id=student_id,
             started__gte=edu.start_date,
             started__lte=edu.finish_date,
+            is_exam=False
         ).exclude(
             course__location__name="Летняя школа"
         )
@@ -519,6 +519,11 @@ def write_do(student_id: int, doc: OpenDocumentText):
             continue
         else:
             have_data = True
+
+        if have_data and not title_is_written:
+            doc.text.addElement(P(text="Освоенные курсы дополнительного образования",
+                                  stylename=doc.src_styles['styles']['h1_title_break_before']))
+            title_is_written = True
 
         courses_grouped = {}
         for crs in courses:
@@ -571,7 +576,7 @@ def write_do(student_id: int, doc: OpenDocumentText):
                 # height="5cm",
                 # zindex="0",
                 stylename=doc.src_styles['auto_styles']['frame_style'],
-                name="Frame_123"
+                name=f"Frame_{random.randint(0,0xFFFFFFFF)}"
             )
 
             frame_p = P(
@@ -580,15 +585,104 @@ def write_do(student_id: int, doc: OpenDocumentText):
             frame_p.addElement(frame)
 
             doc.text.addElement(frame_p)
-    if not have_data:
-        doc.text.addElement(P(text="Нет данных", stylename=doc.src_styles['styles']['body_title']))
+    # if not have_data:
+    #     doc.text.addElement(P(text="Нет данных", stylename=doc.src_styles['styles']['body_title']))
+
+
+def write_exams(student_id: int, doc: OpenDocumentText):
+    have_data = False
+    title_is_written = False
+
+    educations: Iterable[Education] = Education.objects.filter(student__id=student_id)
+
+    for edu in educations:
+        courses = CourseParticipation.objects \
+            .filter(
+            student__id=student_id,
+            started__gte=edu.start_date,
+            started__lte=edu.finish_date,
+            is_exam=True
+        ).exclude(
+            course__location__name="Летняя школа"
+        )
+
+        if not courses:
+            continue
+        else:
+            have_data = True
+
+        if have_data and not title_is_written:
+            doc.text.addElement(P(text="Результаты экзаменов",
+                                  stylename=doc.src_styles['styles']['h1_title_break_before']))
+            title_is_written = True
+
+        courses_grouped = {}
+        for crs in courses:
+            education_year = crs.started.year
+            if 1 <= crs.started.month <= 8:
+                education_year -= 1
+
+            if education_year in courses_grouped:
+                courses_grouped[education_year].append(crs)
+            else:
+                courses_grouped[education_year] = [crs]
+
+        course_years = list(courses_grouped.keys())
+        course_years.sort()
+
+        # print(f"student_id = {student_id}")
+        # print(f"course_years = {course_years}")
+
+        min_year = course_years[0]
+
+        for year in course_years:
+            title = strings_to_breaks(
+                [
+                    "",
+                    f"{year}-{year + 1} учебный год, {year - min_year + 1} год обучения, {edu.department.name.lower()}"
+                ], doc.src_styles['styles']['h2_title'])
+
+            table_data = [['Предмет', 'Часы', 'Оценка']]
+            for c in courses_grouped[year]:
+                table_data.append(
+                    [f'{c.course.name}{", " if c.course.chapter != "" else ""}{c.course.chapter}', c.hours, c.mark])
+
+            table = make_table(
+                table_data,
+                doc=doc,
+                column_width=['9cm', '1cm', '3cm'],
+                p_style_header=doc.src_styles['styles']['body_bold_center'],
+                style_custom=[
+                    lambda object_type, table_width, table_height, x, y, data:
+                        (doc.src_styles['styles']['body_title'], "styles")
+                        if object_type == 'paragraph' and y > 0 and x + 2 >= table_width
+                        else None
+                ]
+            )
+
+            frame = make_frame(
+                [title, table],
+                anchortype="paragraph",
+                width="13cm",
+                # height="5cm",
+                # zindex="0",
+                stylename=doc.src_styles['auto_styles']['frame_style'],
+                name=f"Frame_{random.randint(0,0xFFFFFFFF)}"
+            )
+
+            frame_p = P(
+                stylename=doc.src_styles['styles']['body_title']
+            )
+            frame_p.addElement(frame)
+
+            doc.text.addElement(frame_p)
+    # if not have_data:
+    #     doc.text.addElement(P(text="Нет данных", stylename=doc.src_styles['styles']['body_title']))
 
 
 def write_summer_school(student_id: int, doc: OpenDocumentText):
-    doc.text.addElement(P(text="Участие в работе Летней научной школы ЛНМО",
-                          stylename=doc.src_styles['styles']['h1_title_break_before']))
-
     have_data = False
+    title_is_written = False
 
     educations: Iterable[Education] = Education.objects.filter(student__id=student_id)
 
@@ -605,6 +699,11 @@ def write_summer_school(student_id: int, doc: OpenDocumentText):
             continue
         else:
             have_data = True
+
+        if have_data and not title_is_written:
+            doc.text.addElement(P(text="Участие в работе Летней научной школы ЛНМО",
+                                  stylename=doc.src_styles['styles']['h1_title_break_before']))
+            title_is_written = True
 
         courses_grouped: dict[CourseParticipation] = {}
         for crs in courses:
@@ -623,13 +722,9 @@ def write_summer_school(student_id: int, doc: OpenDocumentText):
         min_year = course_years[0]
 
         for year in course_years:
-            doc.text.addElement(
-                strings_to_breaks(
-                    [
-                        "",
-                        f"{year}-{year + 1} учебный год, {year - min_year + 1} год обучения, {edu.department.name.lower()}"
-                    ], doc.src_styles['styles']['h2_title'])
-            )
+            title = strings_to_breaks(["",
+                                        f"{year}-{year + 1} учебный год, {year - min_year + 1} год обучения, {edu.department.name.lower()}"],
+                                       doc.src_styles['styles']['h2_title'])
             table_data = [['Название', 'Часы', 'Оценка', 'ФИО преподавателя']]
             for c in courses_grouped[year]:
                 table_data.append([
@@ -639,30 +734,35 @@ def write_summer_school(student_id: int, doc: OpenDocumentText):
                     f"{c.teacher.last_name} {c.teacher.first_name} {c.teacher.middle_name}"
                 ])
 
-            doc.text.addElement(
-                make_table(
-                    table_data,
-                    doc=doc,
-                    column_width=['6cm', '1.5cm', '2cm', '7.5cm'],
-                    p_style_header=doc.src_styles['styles']['body_bold_center'],
-                    style_custom=[
-                        lambda object_type, table_width, table_height, x, y, data:
-                            (doc.src_styles['styles']['body_title'], "styles")
-                            if object_type == 'paragraph' and y > 0 and 1 <= x <= 2
-                            else None
-                ]
-                )
+            table = make_table(table_data, doc=doc, column_width=['6cm', '1.5cm', '2cm', '7.5cm'],
+                           p_style_header=doc.src_styles['styles']['body_bold_center'], style_custom=[
+                    lambda object_type, table_width, table_height, x, y, data: (doc.src_styles['styles']['body_title'],
+                                                                                "styles") if object_type == 'paragraph' and y > 0 and 1 <= x <= 2 else None])
+
+            frame = make_frame(
+                [title, table],
+                anchortype="paragraph",
+                width="13cm",
+                # height="5cm",
+                # zindex="0",
+                stylename=doc.src_styles['auto_styles']['frame_style'],
+                name=f"Frame_{random.randint(0, 0xFFFFFFFF)}"
             )
 
-    if not have_data:
-        doc.text.addElement(P(text="Нет данных", stylename=doc.src_styles['styles']['body_title']))
+            frame_p = P(
+                stylename=doc.src_styles['styles']['body_title']
+            )
+            frame_p.addElement(frame)
+
+            doc.text.addElement(frame_p)
+
+    # if not have_data:
+    #     doc.text.addElement(P(text="Нет данных", stylename=doc.src_styles['styles']['body_title']))
 
 
 def write_seminars(student_id: int, doc: OpenDocumentText):
-    doc.text.addElement(P(text="Участие в работе научных семинаров, проектных групп",
-                          stylename=doc.src_styles['styles']['h1_title_break_before']))
-
     have_data = False
+    title_is_written = False
 
     educations: Iterable[Education] = Education.objects.filter(student__id=student_id)
 
@@ -678,6 +778,11 @@ def write_seminars(student_id: int, doc: OpenDocumentText):
             continue
         else:
             have_data = True
+
+        if have_data and not title_is_written:
+            doc.text.addElement(P(text="Участие в работе научных семинаров, проектных групп",
+                                  stylename=doc.src_styles['styles']['h1_title_break_before']))
+            title_is_written = True
 
         seminars_grouped: dict[SeminarParticipation] = {}
         for crs in seminars:
@@ -696,13 +801,9 @@ def write_seminars(student_id: int, doc: OpenDocumentText):
         min_year = seminar_years[0]
 
         for year in seminar_years:
-            doc.text.addElement(
-                strings_to_breaks(
-                    [
-                        "",
-                        f"{year}-{year + 1} учебный год, {year - min_year + 1} год обучения, {edu.department.name.lower()}"
-                    ], doc.src_styles['styles']['h2_title'])
-            )
+            title = strings_to_breaks(["",
+                                        f"{year}-{year + 1} учебный год, {year - min_year + 1} год обучения, {edu.department.name.lower()}"],
+                                       doc.src_styles['styles']['h2_title'])
             table_data = [['Название', 'ФИО преподавателя']]
             for c in seminars_grouped[year]:
                 table_data.append([
@@ -710,26 +811,33 @@ def write_seminars(student_id: int, doc: OpenDocumentText):
                     f"{c.teacher.last_name} {c.teacher.first_name} {c.teacher.middle_name}"
                 ])
 
-            doc.text.addElement(
-                make_table(
-                    table_data,
-                    doc=doc,
-                    column_width=['8.5cm', '8.5cm'],
-                    p_style_header=doc.src_styles['styles']['body_bold_center']
-                )
+            table = make_table(table_data, doc=doc, column_width=['8.5cm', '8.5cm'],
+                           p_style_header=doc.src_styles['styles']['body_bold_center'])
+
+            frame = make_frame(
+                [title, table],
+                anchortype="paragraph",
+                width="13cm",
+                # height="5cm",
+                # zindex="0",
+                stylename=doc.src_styles['auto_styles']['frame_style'],
+                name=f"Frame_{random.randint(0, 0xFFFFFFFF)}"
             )
 
-    if not have_data:
-        doc.text.addElement(P(text="Нет данных", stylename=doc.src_styles['styles']['body_title']))
+            frame_p = P(
+                stylename=doc.src_styles['styles']['body_title']
+            )
+            frame_p.addElement(frame)
+
+            doc.text.addElement(frame_p)
+
+    # if not have_data:
+    #     doc.text.addElement(P(text="Нет данных", stylename=doc.src_styles['styles']['body_title']))
 
 
 def write_projects(student_id: int, doc: OpenDocumentText):
-    doc.text.addElement(P(text="Научное исследование (проект), выполненный в рамках "
-                               "научного семинара или проектной группы "
-                               "ЧОУ ОиДО «ЛНМО» или в сторонних организациях",
-                          stylename=doc.src_styles['styles']['h1_title_break_before']))
-
     have_data = False
+    title_is_written = False
 
     educations: Iterable[Education] = Education.objects.filter(student__id=student_id)
 
@@ -745,6 +853,13 @@ def write_projects(student_id: int, doc: OpenDocumentText):
             continue
         else:
             have_data = True
+
+        if have_data and not title_is_written:
+            doc.text.addElement(P(text="Научное исследование (проект), выполненный в рамках "
+                                       "научного семинара или проектной группы "
+                                       "ЧОУ ОиДО «ЛНМО» или в сторонних организациях",
+                                  stylename=doc.src_styles['styles']['h1_title_break_before']))
+            title_is_written = True
 
         projects_grouped: dict[int, list[ProjectParticipation]] = {}
         for proj in projects:
@@ -763,13 +878,10 @@ def write_projects(student_id: int, doc: OpenDocumentText):
         min_year = project_years[0]
 
         for year in project_years:
-            doc.text.addElement(
-                strings_to_breaks(
-                    [
-                        "",
-                        f"{year}-{year + 1} учебный год, {year - min_year + 1} год обучения, {edu.department.name.lower()}"
-                    ], doc.src_styles['styles']['h2_title'])
-            )
+            title = strings_to_breaks(["",
+                                        f"{year}-{year + 1} учебный год, {year - min_year + 1} год обучения, {edu.department.name.lower()}"],
+                                       doc.src_styles['styles']['h2_title'])
+
             table_data = [['Название', 'ФИО руководителя']]
             for p in projects_grouped[year]:
                 table_data.append([
@@ -777,24 +889,33 @@ def write_projects(student_id: int, doc: OpenDocumentText):
                     f"{p.curator.last_name} {p.curator.first_name} {p.curator.middle_name}"
                 ])
 
-            doc.text.addElement(
-                make_table(
-                    table_data,
-                    doc=doc,
-                    column_width=['8.5cm', '8.5cm'],
-                    p_style_header=doc.src_styles['styles']['body_bold_center']
-                )
+            table = make_table(table_data, doc=doc, column_width=['8.5cm', '8.5cm'],
+                           p_style_header=doc.src_styles['styles']['body_bold_center'])
+
+            frame = make_frame(
+                [title, table],
+                anchortype="paragraph",
+                width="13cm",
+                # height="5cm",
+                # zindex="0",
+                stylename=doc.src_styles['auto_styles']['frame_style'],
+                name=f"Frame_{random.randint(0, 0xFFFFFFFF)}"
             )
 
-    if not have_data:
-        doc.text.addElement(P(text="Нет данных", stylename=doc.src_styles['styles']['body_title']))
+            frame_p = P(
+                stylename=doc.src_styles['styles']['body_title']
+            )
+            frame_p.addElement(frame)
+
+            doc.text.addElement(frame_p)
+
+    # if not have_data:
+    #     doc.text.addElement(P(text="Нет данных", stylename=doc.src_styles['styles']['body_title']))
 
 
 def write_olympiads(student_id: int, doc: OpenDocumentText):
-    doc.text.addElement(P(text="Достижения на конкурсах, олимпиадах, турнирах",
-                          stylename=doc.src_styles['styles']['h1_title_break_before']))
-
     have_data = False
+    title_is_written = False
 
     educations: Iterable[Education] = Education.objects.filter(student__id=student_id)
 
@@ -810,6 +931,11 @@ def write_olympiads(student_id: int, doc: OpenDocumentText):
             continue
         else:
             have_data = True
+
+        if have_data and not title_is_written:
+            doc.text.addElement(P(text="Достижения на конкурсах, олимпиадах, турнирах",
+                                  stylename=doc.src_styles['styles']['h1_title_break_before']))
+            title_is_written = True
 
         olympiads_grouped: dict[int, list[ProjectParticipation]] = {}
         for oly in olympiads:
@@ -828,52 +954,87 @@ def write_olympiads(student_id: int, doc: OpenDocumentText):
         min_year = olympiad_years[0]
 
         for year in olympiad_years:
-            doc.text.addElement(
-                strings_to_breaks(
-                    [
-                        "",
-                        f"{year}-{year + 1} учебный год, {year - min_year + 1} год обучения, {edu.department.name.lower()}"
-                    ], doc.src_styles['styles']['h2_title'])
-            )
+            title = strings_to_breaks(["",
+                                        f"{year}-{year + 1} учебный год, {year - min_year + 1} год обучения, {edu.department.name.lower()}"],
+                                       doc.src_styles['styles']['h2_title'])
+
             table_data = [['Название', 'Награда']]
             for o in olympiads_grouped[year]:
                 table_data.append([
                     o.olympiad.name + (f", {o.olympiad.stage}" if o.olympiad.stage else ""),
-                    o.title + (f", {o.prize}" if o.prize else "") + (f", в составе команды" if o.is_team_member else "")
+                    ', '.join(
+                        filter(lambda x: x, [
+                            o.title,
+                            o.prize,
+                            (f"в составе команды" if o.is_team_member else "")
+                        ])
+                    )
                 ])
 
-            doc.text.addElement(
-                make_table(
-                    table_data,
-                    doc=doc,
-                    column_width=['8.5cm', '8.5cm'],
-                    p_style_header=doc.src_styles['styles']['body_bold_center']
-                )
+            table = make_table(table_data, doc=doc, column_width=['8.5cm', '8.5cm'],
+                           p_style_header=doc.src_styles['styles']['body_bold_center'])
+
+            frame = make_frame(
+                [title, table],
+                anchortype="paragraph",
+                width="13cm",
+                # height="5cm",
+                # zindex="0",
+                stylename=doc.src_styles['auto_styles']['frame_style'],
+                name=f"Frame_{random.randint(0, 0xFFFFFFFF)}"
             )
 
-    if not have_data:
-        doc.text.addElement(P(text="Нет данных", stylename=doc.src_styles['styles']['body_title']))
+            frame_p = P(
+                stylename=doc.src_styles['styles']['body_title']
+            )
+            frame_p.addElement(frame)
+
+            doc.text.addElement(frame_p)
+
+    # if not have_data:
+    #     doc.text.addElement(P(text="Нет данных", stylename=doc.src_styles['styles']['body_title']))
 
 
 def write_padding(n: int, doc: OpenDocumentText):
     if n < 1:
         return
 
+    rs = Style(
+        name='rs',
+        family="table-row"
+    )
+    rs.addElement(
+        TableRowProperties(
+            minrowheight='7mm',
+            rowheight='7mm'
+        )
+    )
+
+    style_custom = [
+        lambda object_type, table_width, table_height, x, y, data:
+        (rs, 'auto_styles')
+        if object_type == 'row'
+        else None
+    ]
+
     def pad_first():
         doc.text.addElement(P(text="Примечания", stylename=doc.src_styles['styles']['h1_title_break_before']))
+
         t1 = make_table(
-            list(map(lambda i: [''], range(39))),
+            list(map(lambda i: [''], range(24))),
+            doc=doc,
             cell_style=doc.src_styles['auto_styles']['cell_underline'],
-            doc=doc
+            style_custom=style_custom
         )
         doc.text.addElement(t1)
 
     def pad_middle():
         doc.text.addElement(P(text=" ", stylename=doc.src_styles['styles']['break_before']))
         tn = make_table(
-            list(map(lambda i: [''], range(41))),
+            list(map(lambda i: [''], range(26))),
             cell_style=doc.src_styles['auto_styles']['cell_underline'],
-            doc=doc
+            doc=doc,
+            style_custom=style_custom
         )
         doc.text.addElement(tn)
 
@@ -993,6 +1154,7 @@ def generate_document_for_student(id: int, document: OpenDocumentText = None, ad
         write_styles(report, styles)
     write_title(id, report)
     write_do(id, report)
+    write_exams(id, report)
     write_summer_school(id, report)
     write_seminars(id, report)
     write_projects(id, report)

@@ -245,7 +245,8 @@ def student_profile(request, id):
     else:
         user = user[0]
     edu = Education.objects.filter(student__id=id)
-    cp = CourseParticipation.objects.filter(student__id=id)
+    cp = CourseParticipation.objects.filter(student__id=id, is_exam=False)
+    ex = CourseParticipation.objects.filter(student__id=id, is_exam=True)
     sp = SeminarParticipation.objects.filter(student__id=id)
     pp = ProjectParticipation.objects.filter(student__id=id)
     op = OlympiadParticipation.objects.filter(student__id=id)
@@ -254,6 +255,7 @@ def student_profile(request, id):
         'user': user,
         'educations': edu,
         'course_participations': cp,
+        'exam_participations': ex,
         'seminar_participations': sp,
         'project_participations': pp,
         'olympiad_participations': op,

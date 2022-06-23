@@ -123,7 +123,6 @@ def it_ix(it: Iterable[Any]) -> Iterable[Tuple[int, Any]]:
     return zip( ints(), it )
 
 
-
 def row_to_strings(row: TableRow, empty_cell_stop_threshhold=10) -> list[str]:
     res = []
     empty_cnt = 0
@@ -221,6 +220,7 @@ def str_has_words(text: str, words: str) -> bool:
         if w not in text_words:
             return False
     return True
+
 
 def sheet_to_csv(sheet: Table, stop_at_empty_row=True) -> csv_data:
     result: list[dict[str, str]] = []
@@ -465,7 +465,8 @@ def import_course(data, strict=True) -> list[Any]:
             course=course,
             hours=int(data["Количество часов"].strip()),
             teacher=teacher,
-            mark=data["Оценка/зачёт"].strip()
+            mark=data["Оценка/зачёт"].strip(),
+            is_exam=data["Экзамен"].strip().lower() == 'да'
         )
 
         if not cp:
@@ -476,7 +477,8 @@ def import_course(data, strict=True) -> list[Any]:
                 course=course,
                 hours=int(data["Количество часов"].strip()),
                 teacher=teacher,
-                mark=data["Оценка/зачёт"].strip()
+                mark=data["Оценка/зачёт"].strip(),
+                is_exam=data["Экзамен"].strip().lower() == 'да'
             )
             cp.save()
         else:
@@ -804,6 +806,7 @@ def doc_parse_old_and_ugly_format(doc: OpenDocumentSpreadsheet, filename: str = 
 
     return result
 
+
 class UglyHelper:
     graduation_date = None
     graduation_class = None
@@ -884,6 +887,7 @@ class UglyHelper:
     
         department = {self.department}"""
 
+
 def parse_ugly_do(sheet: Table, helper: UglyHelper) -> csv_data:
     lst = sheet_to_list2d(sheet)
     (row, col) = find_fio(lst)
@@ -905,7 +909,8 @@ def parse_ugly_do(sheet: Table, helper: UglyHelper) -> csv_data:
                 'Завершение': helper.courses_finished,
                 'Фамилия преподавателя': 'Преподаватель?',
                 'Имя преподавателя': 'Преподаватель?',
-                'Отчество преподавателя': 'Преподаватель?'
+                'Отчество преподавателя': 'Преподаватель?',
+                'Экзамен': 'Нет'
             }
             overaly_rec = {}
             for field in rec:
@@ -959,7 +964,8 @@ def parse_ugly_exams(sheet: Table, helper: UglyHelper) -> csv_data:
                 'Завершение': helper.courses_finished,
                 'Фамилия преподавателя': 'Преподаватель?',
                 'Имя преподавателя': 'Преподаватель?',
-                'Отчество преподавателя': 'Преподаватель?'
+                'Отчество преподавателя': 'Преподаватель?',
+                'Экзамен': 'Да'
             }
             overaly_rec = {}
             for field in rec:
@@ -1151,6 +1157,7 @@ def parse_ugly_olympiads(sheet: Table, helper: UglyHelper) -> csv_data:
                   )
     return result
 
+
 def parse_ugly_summer(sheet: Table, helper: UglyHelper) -> csv_data:
     lst = sheet_to_list2d(sheet)
     (row, col) = find_fio(lst)
@@ -1208,6 +1215,7 @@ def parse_ugly_summer(sheet: Table, helper: UglyHelper) -> csv_data:
                   sep="\n"
                   )
     return result
+
 
 def generate_ugly_educations(results: dict, helper: UglyHelper) -> list[dict]:
     names = set()

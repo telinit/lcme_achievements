@@ -83,11 +83,44 @@
                     <th scope="col">Предмет</th>
                     <th scope="col">Дата окончания</th>
                     <th scope="col">Количество часов</th>
-                    <th scope="col">Результат экзаменов</th>
+                    <th scope="col">Результат</th>
                 </tr>
             </thead>
             <tbody>
                 {% for cp in course_participations %}
+                <tr>
+                    <th scope="col">{{cp.course.name}}</th>
+                    <td scope="col">{{cp.course.chapter}}</td>
+                    <td scope="col">{{cp.course.subject}}</td>
+                    <td scope="col">{{cp.finished}}</td>
+                    <td scope="col">{{cp.hours}}</td>
+                    <td scope="col">{{cp.mark}}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="lead">(Данных нет)</p>
+    {% endif %}
+
+</div>
+
+<h2>Данные об экзаменах</h2>
+<div class="student_exams">
+    {% if exam_participations %}
+        <table class="table table-striped table-hover course_list">
+            <thead>
+                <tr>
+                    <th scope="col">Название курса</th>
+                    <th scope="col">Раздел</th>
+                    <th scope="col">Предмет</th>
+                    <th scope="col">Дата окончания</th>
+                    <th scope="col">Количество часов</th>
+                    <th scope="col">Результат экзаменов</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cp in exam_participations %}
                 <tr>
                     <th scope="col">{{cp.course.name}}</th>
                     <td scope="col">{{cp.course.chapter}}</td>

@@ -209,6 +209,7 @@ class CourseParticipation(Participation):
     hours = models.IntegerField("Количество часов")
     teacher = models.ForeignKey(User, verbose_name="Преподаватель", related_name='course_teacher', on_delete=models.CASCADE)
     mark = models.CharField("Итоговая оценка", max_length=255)
+    is_exam = models.BooleanField("Оценка за экзамен?", default=False)
 
     def __str__(self):
         return f"{self.student}, {self.course}"
