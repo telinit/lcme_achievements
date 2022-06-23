@@ -69,7 +69,7 @@ make-backup-production:
     - bare
   script:
       - mkdir -p /docker/achievements/backups/db
-      - docker exec achievements_postgres_1 "echo 127.0.0.1:5432:$POSTGRES_DB:$POSTGRES_USER:$POSTGRES_PASSWORD > /.pgpas"
+      - docker exec achievements_postgres_1 "/bin/sh -c 'echo 127.0.0.1:5432:$POSTGRES_DB:$POSTGRES_USER:$POSTGRES_PASSWORD > /.pgpas'"
       - docker exec achievements_postgres_1 env PGPASSFILE=/.pgpass pg_dump -d  > /docker/achievements/backups/db/$(date +%Y-%m-%d_%H-%M-%S).sql
   when: manual
 
