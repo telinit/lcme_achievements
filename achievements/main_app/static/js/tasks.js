@@ -17,9 +17,10 @@ function dedupe_edu() {
 function find_similar() {
     let t = $("#find_similar_obj_type").val()
     let l = $("#find_similar_limit").val()
+    let m = $("#find_similar_method").val()
     $('#find_similar_spinner').removeClass('d-none')
     $.ajax({
-    url: `/tasks/find_similar_objects/${t}/${l}`,
+    url: `/tasks/find_similar_objects/${t}/${m}/${l}`,
     })
     .done (function(data, textStatus, jqXHR) {
             // .addClass('alert-success')

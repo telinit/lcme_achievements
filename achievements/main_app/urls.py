@@ -13,7 +13,7 @@ urlpatterns = [
     path('print/dep/<int:dep>/year/<int:year>/<str:format_>', views.print_dep_year),
     path('tasks', views.tasks),
     path('tasks/dedupe_edu', views.dedupe_edu),
-    path('tasks/find_similar_objects/<str:obj_type>/<int:limit>', views.find_similar_objects),
+    path('tasks/find_similar_objects/<str:obj_type>/<str:method>/<int:limit>', views.find_similar_objects),
     path('print/student/<int:sid>/<str:format_>', views.student_report)
 ]
 

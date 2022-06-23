@@ -26,7 +26,7 @@
     <div class="mx-2 mb-3 justify-content-end row col-lg-8">
         <div class="card p-2 m-2 bg-light">
             <div class=" row">
-                <div class="col-6">
+                <div class="col-5">
                     <label class="form-label">Тип объектов</label>
                     <select class="form-select" id="find_similar_obj_type">
                         <option value="user">Пользователь</option>
@@ -47,7 +47,22 @@
                         <option value="olympiadparticipation">Участие в олимпиаде</option>
                     </select>
                 </div>
-                <div class="col-6">
+                <div class="col-5">
+                    <label class="form-label">Метод</label>
+                    <select class="form-select" id="find_similar_method">
+                        <option value="ratio">ratio</option>
+                        <option value="partial_ratio">partial_ratio</option>
+                        <option value="UQRatio">UQRatio</option>
+                        <option value="QRatio">QRatio</option>
+                        <option value="partial_token_set_ratio">partial_token_set_ratio</option>
+                        <option value="partial_token_sort_ratio">partial_token_sort_ratio</option>
+                        <option value="token_set_ratio">token_set_ratio</option>
+                        <option value="token_sort_ratio">token_sort_ratio</option>
+                        <option value="UWRatio">UWRatio</option>
+                        <option value="WRatio">WRatio</option>
+                    </select>
+                </div>
+                <div class="col-2">
                     <label class="form-label">Лимит записей</label>
                     <input class="form-control" placeholder="Лимит записей" value="20" id="find_similar_limit"/>
                 </div>

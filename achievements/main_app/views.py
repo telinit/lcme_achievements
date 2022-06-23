@@ -1,3 +1,4 @@
+from ctypes import ArgumentError
 from typing import Callable
 
 from django.core import serializers
@@ -278,7 +279,8 @@ def student_report(request, sid, format_):
     response = FileResponse(
         data,
         content_type='application/vnd.oasis.opendocument.text' if format_ == 'odt' else 'application/pdf',
-        filename=f"Зачетка {student.last_name} {student.first_name} {student.middle_name} {datetime.now().year} год.{format_}"
+        filename=f"Зачетка {student.last_name} {student.first_name} {student.middle_name} {datetime.now().year} год.{format_}",
+        as_attachment=True
     )
     return response
 
@@ -328,7 +330,7 @@ def bulk_edit():
     pass
 
 
-def find_similar_objects(request, obj_type: str, limit: int):
+def find_similar_objects(request, obj_type: str, method: str, limit: int):
     obj_type_class_map: dict[str, type] = {
         'user': User,
         'location': Location,
@@ -392,13 +394,33 @@ def find_similar_objects(request, obj_type: str, limit: int):
 def find_nearest_objects(
         limit: int,
         objects: list[models.Model],
-        str_func: Callable[[models.Model], str] = str
+        str_func: Callable[[models.Model], str] = str,
+        method: str = 'ratio'
 ) -> list[Tuple[int, models.Model, models.Model]]:
     l = len(objects)
     result: list[Tuple[int, models.Model, models.Model]] = []  # (ratio, object1, object2)
+
+    cmp_func_map: dict[str, Callable[[str, str], int]] = {
+        'ratio':                    fuzz.ratio,
+        'partial_ratio':            fuzz.partial_ratio,
+        'UQRatio':                  fuzz.UQRatio,
+        'QRatio':                   fuzz.QRatio,
+        'partial_token_set_ratio':  fuzz.partial_token_set_ratio,
+        'partial_token_sort_ratio': fuzz.partial_token_sort_ratio,
+        'token_set_ratio':          fuzz.token_set_ratio,
+        'token_sort_ratio':         fuzz.token_sort_ratio,
+        'UWRatio':                  fuzz.UWRatio,
+        'WRatio':                   fuzz.WRatio,
+    }
+
+    if method not in cmp_func_map:
+        raise ArgumentError('Bad method')
+
+    cmp_func = cmp_func_map[method]
+
     for obj_ix1 in range(l):
         for obj_ix2 in range(obj_ix1 + 1, l):
-            ratio = fuzz.ratio(
+            ratio = cmp_func(
                 str_func(objects[obj_ix1]),
                 str_func(objects[obj_ix2])
             )

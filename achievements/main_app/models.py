@@ -255,3 +255,12 @@ class OlympiadParticipation(Participation, Award):
         verbose_name = "участие в олимпиадах"
         verbose_name_plural = "участия в олимпиадах"
 
+
+def wipe_all(keep_admin=True):
+    users = User.objects.all()
+    if keep_admin:
+        users = users.exclude(username='admin')
+    users.delete()
+
+    for c in [Location, Department, Course, Olympiad, Project, Seminar, Subject]:
+        c.objects.all().delete()

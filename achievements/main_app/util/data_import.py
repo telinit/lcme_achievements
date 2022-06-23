@@ -864,9 +864,9 @@ class UglyHelper:
             self.admission_date = '01.09.' + str(admission_year)
 
         if courses_stared_year is not None and current_class is not None and admission_year is not None:
-            elapsed = courses_stared_year - int(admission_year)
+            elapsed = courses_stared_year - int(admission_year) - 1
             admission_class = current_class - elapsed
-            self.admission_class = str(admission_class)
+            self.admission_class = f'{max(admission_class, int(self.admission_class))}'
 
         study_years = int(self.graduation_class) - int(self.admission_class)
 
@@ -1011,7 +1011,6 @@ def parse_ugly_seminars(sheet: Table, helper: UglyHelper) -> csv_data:
                 'Фамилия': rec['фамилия'],
                 'Имя': rec['имя'],
                 'Отчество': rec['отчество'],
-                'Глава': '',
                 'Предмет': 'Не указан',
                 'Место проведения': 'ЛНМО',
                 'Начало': helper.courses_stared,
@@ -1019,7 +1018,7 @@ def parse_ugly_seminars(sheet: Table, helper: UglyHelper) -> csv_data:
                 'Фамилия преподавателя': 'Преподаватель?',
                 'Имя преподавателя': 'Преподаватель?',
                 'Отчество преподавателя': 'Преподаватель?',
-                'Оценка': ''
+                'Оценка/зачёт': ''
             }
             overaly_rec = {}
             for field in rec:
@@ -1079,7 +1078,7 @@ def parse_ugly_projects(sheet: Table, helper: UglyHelper) -> csv_data:
             }
             overaly_rec = {}
             for field in rec:
-                if field.find('дисциплина') >= 0:
+                if field.find('название') >= 0:
                     if 'Название проекта' in overaly_rec:  # Flush if already present
                         r = dict(base_rec)
                         r.update(overaly_rec)
@@ -1087,11 +1086,11 @@ def parse_ugly_projects(sheet: Table, helper: UglyHelper) -> csv_data:
                         overaly_rec = {}
                     if rec[field]:
                         overaly_rec['Название проекта'] = rec[field]
-                elif field.find('фамилия руководителя') >= 0:
+                elif field.find('фамилия руков') >= 0 or field.find('фамилия преп') >= 0:
                     overaly_rec['Фамилия руководителя'] = rec[field]
-                elif field.find('имя руководителя') >= 0:
+                elif field.find('имя руков') >= 0 or field.find('имя преп') >= 0:
                     overaly_rec['Имя руководителя'] = rec[field]
-                elif field.find('отчество руководителя') >= 0:
+                elif field.find('отчество руков') >= 0 or field.find('отчество преп') >= 0:
                     overaly_rec['Отчество руководителя'] = rec[field]
 
                 if len(overaly_rec) >= 4:  # Flush if collected enough info
