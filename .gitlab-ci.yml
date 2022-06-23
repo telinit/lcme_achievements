@@ -6,6 +6,7 @@ variables:
   POSTGRES_PASSWORD: $POSTGRES_PASSWORD
 
 stages:
+  - tools
   - build
   - test
   - push
@@ -63,7 +64,7 @@ make-default-admin-production:
   when: manual
 
 make-backup-production:
-  stage: deploy
+  stage: tools
   tags:
     - bare
   script:
