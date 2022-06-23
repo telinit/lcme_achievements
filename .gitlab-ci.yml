@@ -62,6 +62,15 @@ make-default-admin-production:
     - docker exec achievements_web_1 /code/make_default_admin.sh
   when: manual
 
+make-backup-production:
+  stage: deploy
+  tags:
+    - bare
+  script:
+      - mkdir -p /docker/achievements/backups/db
+      - docker exec -it achievements_postgres_1 pg_dump "$POSTGRES_DB" > /docker/achievements/backups/db/$(date +%Y-%m-%d_%H-%M-%S).sql
+  when: manual
+
 stop-deploy-2-production:
   stage: deploy
   script:
