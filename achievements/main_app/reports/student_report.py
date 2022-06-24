@@ -614,8 +614,11 @@ def write_exams(student_id: int, doc: OpenDocumentText):
             have_data = True
 
         if have_data and not title_is_written:
-            doc.text.addElement(P(text="Результаты устных экзаменов (зимние/летние сессии ЛНМО)",
-                                  stylename=doc.src_styles['styles']['h1_title_break_before']))
+            doc.text.addElement(strings_to_breaks(
+                ["Результаты устных экзаменов",
+                 "(зимние/летние сессии ЛНМО)"],
+                doc.src_styles['styles']['h1_title_break_before']
+            ))
             title_is_written = True
 
         courses_grouped = {}
