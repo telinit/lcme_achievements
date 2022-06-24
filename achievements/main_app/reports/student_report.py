@@ -511,7 +511,7 @@ def write_do(student_id: int, doc: OpenDocumentText):
             started__gte=edu.start_date,
             started__lte=edu.finish_date,
             is_exam=False
-        ).exclude(
+        ).order_by('started').exclude(
             course__location__name="Летняя школа"
         )
 
@@ -602,9 +602,10 @@ def write_exams(student_id: int, doc: OpenDocumentText):
             started__gte=edu.start_date,
             started__lte=edu.finish_date,
             is_exam=True
-        ).exclude(
+        ).order_by('started').exclude(
             course__location__name="Летняя школа"
         )
+
 
         if not courses:
             continue
@@ -684,7 +685,7 @@ def write_summer_school(student_id: int, doc: OpenDocumentText):
     have_data = False
     title_is_written = False
 
-    educations: Iterable[Education] = Education.objects.filter(student__id=student_id)
+    educations: Iterable[Education] = Education.objects.filter(student__id=student_id).order_by('started')
 
     for edu in educations:
         courses = CourseParticipation.objects \
@@ -764,7 +765,7 @@ def write_seminars(student_id: int, doc: OpenDocumentText):
     have_data = False
     title_is_written = False
 
-    educations: Iterable[Education] = Education.objects.filter(student__id=student_id)
+    educations: Iterable[Education] = Education.objects.filter(student__id=student_id).order_by('started')
 
     for edu in educations:
         seminars = SeminarParticipation.objects \
@@ -839,7 +840,7 @@ def write_projects(student_id: int, doc: OpenDocumentText):
     have_data = False
     title_is_written = False
 
-    educations: Iterable[Education] = Education.objects.filter(student__id=student_id)
+    educations: Iterable[Education] = Education.objects.filter(student__id=student_id).order_by('started')
 
     for edu in educations:
         projects = ProjectParticipation.objects \
@@ -917,7 +918,7 @@ def write_olympiads(student_id: int, doc: OpenDocumentText):
     have_data = False
     title_is_written = False
 
-    educations: Iterable[Education] = Education.objects.filter(student__id=student_id)
+    educations: Iterable[Education] = Education.objects.filter(student__id=student_id).order_by('started')
 
     for edu in educations:
         olympiads = OlympiadParticipation.objects \

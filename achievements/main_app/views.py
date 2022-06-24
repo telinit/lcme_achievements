@@ -5,6 +5,7 @@ from django.core import serializers
 from django.core.files.uploadedfile import UploadedFile
 from django.db import transaction
 from django.db.models import Model
+from django.forms import Form
 from django.http import HttpResponse, FileResponse, HttpResponseBadRequest, HttpRequest, HttpResponseForbidden, \
     HttpResponseServerError
 from django.shortcuts import render
@@ -274,7 +275,8 @@ def student_report(request, sid, format_):
         data = report
     else:
         data = odt_data_to_pdf_reader(report).stream
-        data.seek(0)
+
+    data.seek(0)
 
     response = FileResponse(
         data,
@@ -438,3 +440,15 @@ def find_nearest_objects(
                         result.pop()
                     break
     return result
+
+
+def edit_merge(request: HttpRequest):
+    if not request.POST['object_type'] or not request.POST['object_ids']:
+        return HttpResponseBadRequest()
+    else:
+        Form
+        pass
+
+
+def edit_bulk(request: HttpRequest):
+    return None

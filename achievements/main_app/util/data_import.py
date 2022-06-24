@@ -1168,6 +1168,7 @@ def parse_ugly_summer(sheet: Table, helper: UglyHelper) -> csv_data:
     result = []
     for rec in csv:
         try:
+            fd = datetime.strptime(helper.courses_finished, '%d.%m.%Y')
             base_rec = {
                 'Фамилия': rec['фамилия'],
                 'Имя': rec['имя'],
@@ -1175,8 +1176,8 @@ def parse_ugly_summer(sheet: Table, helper: UglyHelper) -> csv_data:
                 'Глава': '',
                 'Предмет': 'Не указан',
                 'Место проведения': 'Летняя школа',
-                'Начало': helper.courses_stared,
-                'Завершение': helper.courses_finished,
+                'Начало': f'01.06.{fd}',             # if helper.courses_finished - the date
+                'Завершение': f'30.08.{fd}',
                 'Фамилия преподавателя': 'Преподаватель?',
                 'Имя преподавателя': 'Преподаватель?',
                 'Отчество преподавателя': 'Преподаватель?',
