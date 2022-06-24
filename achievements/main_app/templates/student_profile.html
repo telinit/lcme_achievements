@@ -112,10 +112,8 @@
             <thead>
                 <tr>
                     <th scope="col">Название курса</th>
-                    <th scope="col">Раздел</th>
                     <th scope="col">Предмет</th>
                     <th scope="col">Дата окончания</th>
-                    <th scope="col">Количество часов</th>
                     <th scope="col">Результат экзаменов</th>
                 </tr>
             </thead>
@@ -123,10 +121,8 @@
                 {% for cp in exam_participations %}
                 <tr>
                     <th scope="col">{{cp.course.name}}</th>
-                    <td scope="col">{{cp.course.chapter}}</td>
                     <td scope="col">{{cp.course.subject}}</td>
                     <td scope="col">{{cp.finished}}</td>
-                    <td scope="col">{{cp.hours}}</td>
                     <td scope="col">{{cp.mark}}</td>
                 </tr>
                 {% endfor %}

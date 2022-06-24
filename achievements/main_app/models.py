@@ -176,9 +176,9 @@ class Olympiad(Activity):
 
 
 class Award(models.Model):
-    title = models.CharField("Звание", max_length=255, null=True)
-    prize = models.CharField("Награда", max_length=255, null=True)
-    is_team_member = models.BooleanField("В составе команды", null=True)
+    title = models.CharField("Звание", max_length=255, null=True, blank=True)
+    prize = models.CharField("Награда", max_length=255, null=True, blank=True)
+    is_team_member = models.BooleanField("В составе команды", null=True, default=False)
 
     def __str__(self):
         a = f'{self.title}'
