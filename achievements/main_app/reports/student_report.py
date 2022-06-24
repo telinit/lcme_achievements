@@ -1,8 +1,9 @@
+import logging
 import pathlib
 import random
 import tempfile
 from datetime import datetime
-from io import StringIO, BytesIO
+from io import StringIO, BytesIO, SEEK_END
 from subprocess import check_call
 from typing import List, Iterable, Any, Callable, Union
 
@@ -1093,28 +1094,47 @@ def write_padding(n: int, doc: OpenDocumentText):
 
 
 def document_to_odt_data(doc: OpenDocumentText):
+    logger = logging.getLogger(__name__)
     buff = BytesIO()
     doc.save(buff)
+
+    logger.info('Saved the document: %d bytes', buff.tell())
     buff.seek(0)
 
     return buff
 
 
 def odt_data_to_pdf_reader(odt: BytesIO) -> PdfReader:
+    logger = logging.getLogger(__name__)
+
+    odt.seek(0, SEEK_END)
+    logger.info('odt.size = %d', odt.tell())
     odt.seek(0)
+
     tmp = tempfile.NamedTemporaryFile(suffix=".odt", delete=False)
+    logger.info('Created a temp file: %s', tmp.name)
+
     tmp.write(odt.read())
     tmp.flush()
     tmp.close()
+
     tmp_path = pathlib.Path(tmp.name)
     os.chdir(tmp_path.parent)
-    check_call(f"soffice --headless --convert-to pdf {tmp_path.name}", shell=True)
+
+    cmd = f"soffice --headless --convert-to pdf {tmp_path.name}"
+    logger.info('cwd = %s', os.getcwd())
+    logger.info('Converting the document to PDF, command = %s', cmd)
+    check_call(cmd, shell=True)
     #os.system(f"soffice --headless --convert-to pdf {tmp_path.name}")
     pdf_file_name = tmp_path.with_suffix('.pdf')
+    logger.info('Output file = %s', pdf_file_name)
 
     assert pdf_file_name.exists()
 
+    logger.info('Output file exists.')
+
     reader = PdfReader(pdf_file_name)
+    logger.info('The final PDF: pages = %d', reader.numPages)
 
     return reader
 
@@ -1150,19 +1170,36 @@ def doc_resave(doc: OpenDocumentText) -> OpenDocumentText:
 
 
 def document_get_missing_padding_count(doc: OpenDocumentText) -> int:
-    data = document_to_odt_data(doc)
-    pdf_r = odt_data_to_pdf_reader(data)
-    n_rem = pdf_r.numPages % 4
+    logger = logging.getLogger(__name__)
 
-    return 4 - n_rem
+    logger.info('Saving the document to ODT data')
+    data = document_to_odt_data(doc)
+
+    logger.info('Creating a PDF document from the ODT file')
+    pdf_r = odt_data_to_pdf_reader(data)
+
+    n_rem = pdf_r.numPages % 4
+    result = 4 - n_rem
+
+    logger.info('pages = %d, n_rem = %d, result = %d', pdf_r.numPages, n_rem, result)
+    return result
 
 
 def generate_document_for_student(id: int, document: OpenDocumentText = None, add_padding=True, padding_length=-1):
+    logger = logging.getLogger(__name__)
     report = document or OpenDocumentText()
 
+    logger.info('Generating a document for student with ID = %d', id)
+
     if not document:
+        logger.info('Generting styles...')
         styles = make_styles()
+
+        logger.info('Style count: %d', )
+
+        logger.info('Writing styles...')
         write_styles(report, styles)
+
     write_title(id, report)
     write_do(id, report)
     write_exams(id, report)

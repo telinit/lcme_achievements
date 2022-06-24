@@ -1,3 +1,4 @@
+import logging
 import os
 import tempfile
 from ctypes import ArgumentError
@@ -214,6 +215,7 @@ def print_(request):
 
 
 def print_dep_year(request, dep, year, format_):
+    log = logging.getLogger(__name__)
     if format_ not in ['pdf', 'odt']:
         return HttpResponseBadRequest()
 
@@ -229,25 +231,40 @@ def print_dep_year(request, dep, year, format_):
 
     dep_name = Department.objects.get(pk=dep).name
 
+    log.info('Generating the reports for %d students, dep = %s', len(student_ids), dep_name)
+
     zip_file_name = f'Зачетные книжки выпускников {year} года, {dep_name}.zip'
+    log.info('ZIP file name: %s', zip_file_name)
+
     zip_buff = BytesIO()
     zip = zipfile.ZipFile(zip_buff, 'w', zipfile.ZIP_DEFLATED)
 
     for i, id in enumerate(student_ids):
         student = User.objects.get(id=id)
+
+        log.info('Generating a report for student with id = %d, name = %s %s %s', id, student.last_name, student.first_name, student.middle_name)
+
+        log.info('Generating the document')
         doc = generate_document_for_student(id)
+
+        log.info('Converting it to ODT')
         odt = document_to_odt_data(doc)
 
         if format_ == 'odt':
             data = odt
         else:
+            log.info('Converting it to PDF')
             data = odt_data_to_pdf_reader(odt).stream
             data.seek(0)
 
         file_name = f'{i} {student.last_name} {student.first_name} {student.middle_name}.{format_}'
+
+        log.info('Adding the file to the ZIP archive: %s', file_name)
         zip.writestr(file_name, data.read())
 
     zip.close()
+
+    log.info('Done creating the archive: length = %d', zip_buff.tell())
     zip_buff.seek(0)
 
     response = FileResponse(
@@ -283,29 +300,29 @@ def student_profile(request, id):
 
 
 def student_report(request, sid, format_):
+    log = logging.getLogger(__name__)
     if format_ not in ['pdf', 'odt']:
         return HttpResponseBadRequest()
 
+    log.info('Generating the report')
     report = document_to_odt_data(generate_document_for_student(sid))
     student = User.objects.get(pk=sid)
 
     if format_ == 'odt':
         data = report
     else:
+        log.info('Converting the report to PDF')
         data = odt_data_to_pdf_reader(report).stream
 
     filename = f"Зачетка {student.last_name} {student.first_name} {student.middle_name} {datetime.now().year} год.{format_}"
     content_type = 'application/vnd.oasis.opendocument.text' if format_ == 'odt' else 'application/pdf'
 
+    log.info('Document length: %d bytes, filename = %s, content_type = %s', data.tell(), filename, content_type)
+
     data.seek(0)
-    tmp_n = tempfile.mktemp()
-    tmp_f = open(tmp_n, 'wb')
-    tmp_f.write(data.read())
-    tmp_f.flush()
-    tmp_f.close()
 
     response = FileResponse(
-        open(tmp_n, 'rb'),
+        data,
         content_type=content_type,
         filename=filename,
         as_attachment=True
