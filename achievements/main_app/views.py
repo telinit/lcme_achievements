@@ -1,4 +1,6 @@
+import tempfile
 from ctypes import ArgumentError
+from io import FileIO, BytesIO
 from typing import Callable
 
 from django.core import serializers
@@ -276,12 +278,20 @@ def student_report(request, sid, format_):
     else:
         data = odt_data_to_pdf_reader(report).stream
 
+    filename = f"Зачетка {student.last_name} {student.first_name} {student.middle_name} {datetime.now().year} год.{format_}"
+    content_type = 'application/vnd.oasis.opendocument.text' if format_ == 'odt' else 'application/pdf'
+
     data.seek(0)
+    tmp_n = tempfile.mktemp()
+    tmp_f = open(tmp_n, 'wb')
+    tmp_f.write(data.read())
+    tmp_f.flush()
+    tmp_f.close()
 
     response = FileResponse(
-        data,
-        content_type='application/vnd.oasis.opendocument.text' if format_ == 'odt' else 'application/pdf',
-        filename=f"Зачетка {student.last_name} {student.first_name} {student.middle_name} {datetime.now().year} год.{format_}",
+        open(tmp_n, 'rb'),
+        content_type=content_type,
+        filename=filename,
         as_attachment=True
     )
     return response
