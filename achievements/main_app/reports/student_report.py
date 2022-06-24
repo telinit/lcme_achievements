@@ -1110,7 +1110,11 @@ def odt_data_to_pdf_reader(odt: BytesIO) -> PdfReader:
     os.chdir(tmp_path.parent)
     check_call(f"soffice --headless --convert-to pdf {tmp_path.name}", shell=True)
     #os.system(f"soffice --headless --convert-to pdf {tmp_path.name}")
-    reader = PdfReader(tmp_path.with_suffix('.pdf'))
+    pdf_file_name = tmp_path.with_suffix('.pdf')
+
+    assert pdf_file_name.exists()
+
+    reader = PdfReader(pdf_file_name)
 
     return reader
 

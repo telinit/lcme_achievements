@@ -229,9 +229,6 @@ def print_dep_year(request, dep, year, format_):
 
     dep_name = Department.objects.get(pk=dep).name
 
-    tmp_dir = tempfile.mkdtemp()
-    os.chdir(tmp_dir)
-
     zip_file_name = f'Зачетные книжки выпускников {year} года, {dep_name}.zip'
     zip_buff = BytesIO()
     zip = zipfile.ZipFile(zip_buff, 'w', zipfile.ZIP_DEFLATED)
