@@ -3,6 +3,7 @@ import random
 import tempfile
 from datetime import datetime
 from io import StringIO, BytesIO
+from subprocess import check_call
 from typing import List, Iterable, Any, Callable, Union
 
 from PyPDF2 import PdfReader
@@ -1104,7 +1105,8 @@ def odt_data_to_pdf_reader(odt: BytesIO) -> PdfReader:
     tmp.close()
     tmp_path = pathlib.Path(tmp.name)
     os.chdir(tmp_path.parent)
-    os.system(f"soffice --headless --convert-to pdf {tmp_path.name}")
+    check_call(f"soffice --headless --convert-to pdf {tmp_path.name}", shell=True)
+    #os.system(f"soffice --headless --convert-to pdf {tmp_path.name}")
     reader = PdfReader(tmp_path.with_suffix('.pdf'))
 
     return reader
@@ -1134,7 +1136,8 @@ def doc_resave(doc: OpenDocumentText) -> OpenDocumentText:
     tmp.flush()
     tmp.close()
 
-    os.system(f"soffice --headless --convert-to odt {name} --outdir out")
+    check_call(f"soffice --headless --convert-to odt {name} --outdir out", shell=True)
+    #os.system(f"soffice --headless --convert-to odt {name} --outdir out")
 
     return opendocument.load(f'out/{name}')
 
@@ -1182,7 +1185,8 @@ def generate_document_for_many_students(stud_list: Iterable[int]):
         cnt += 1
 
     files = ' '.join(map(lambda i: f'{i}.odt', range(cnt)))
-    os.system(f'soffice --norestore --headless --convert-to pdf {files}')
+    check_call(f'soffice --norestore --headless --convert-to pdf {files}', shell=True)
+    #os.system(f'soffice --norestore --headless --convert-to pdf {files}')
 
     page_counts = []
     for i in range(cnt):
