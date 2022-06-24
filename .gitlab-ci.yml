@@ -73,7 +73,7 @@ make-backup-production:
       - docker cp /docker/achievements/backups/db/.pgpass achievements_postgres_1:/.pgpass
       - rm /docker/achievements/backups/db/.pgpass
       - docker exec achievements_postgres_1 chmod 600 /.pgpass
-      - docker exec achievements_postgres_1 env PGPASSFILE=/.pgpass pg_dump -w -U "$POSTGRES_USER" > /docker/achievements/backups/db/$(date +%Y-%m-%d_%H-%M-%S).sql
+      - docker exec achievements_postgres_1 env PGPASSFILE=/.pgpass pg_dump -w -U "$POSTGRES_USER" | gzip > /docker/achievements/backups/db/$(date +%Y-%m-%d_%H-%M-%S).sql.gz
   when: manual
 
 stop-deploy-2-production:
