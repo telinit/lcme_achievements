@@ -1,3 +1,4 @@
+import os
 import tempfile
 from ctypes import ArgumentError
 from io import FileIO, BytesIO
@@ -19,6 +20,7 @@ from .reports.student_report import generate_document_for_many_students, documen
     generate_document_for_student, odt_data_to_pdf_reader
 from .util.data_import import *
 from .util.util import group_by_type, add_to_dict_multival_set
+import zipfile
 
 
 # Create your views here.
@@ -224,20 +226,37 @@ def print_dep_year(request, dep, year, format_):
             ).values('student__id')
         )
     )
-    doc = generate_document_for_many_students(student_ids)
-    odt = document_to_odt_data(doc)
-
-    if format_ == 'odt':
-        data = odt
-    else:
-        data = odt_data_to_pdf_reader(odt).stream
-        data.seek(0)
 
     dep_name = Department.objects.get(pk=dep).name
+
+    tmp_dir = tempfile.mkdtemp()
+    os.chdir(tmp_dir)
+
+    zip_file_name = f'Зачетные книжки выпускников {year} года, {dep_name}.zip'
+    zip_buff = BytesIO()
+    zip = zipfile.ZipFile(zip_buff, 'w', zipfile.ZIP_DEFLATED)
+
+    for i, id in enumerate(student_ids):
+        student = User.objects.get(id=id)
+        doc = generate_document_for_student(id)
+        odt = document_to_odt_data(doc)
+
+        if format_ == 'odt':
+            data = odt
+        else:
+            data = odt_data_to_pdf_reader(odt).stream
+            data.seek(0)
+
+        file_name = f'{i} {student.last_name} {student.first_name} {student.middle_name}.{format_}'
+        zip.writestr(file_name, data.read())
+
+    zip.close()
+    zip_buff.seek(0)
+
     response = FileResponse(
-        data,
-        content_type='application/vnd.oasis.opendocument.text' if format_ == 'odt' else 'application/pdf',
-        filename=f"Зачетки выпускников {year} года, {dep_name}.{format_}"
+        zip_buff,
+        content_type='application/zip',
+        filename=zip_file_name,
     )
     return response
 
