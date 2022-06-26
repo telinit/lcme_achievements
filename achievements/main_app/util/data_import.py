@@ -1,8 +1,10 @@
+import logging
 import os
 import pathlib
 import sys
 import traceback
 from datetime import datetime
+from logging import Logger
 from traceback import print_exc
 from typing import Iterable, Tuple, Any
 
@@ -687,6 +689,7 @@ def import_olympiad(data, strict=True):
 
 
 def doc_parse_old_and_ugly_format(doc: OpenDocumentSpreadsheet, filename: str = "") -> dict[str, csv_data]:
+    log = logging.getLogger(__name__)
     result = {
         'education': [],
         'course': [],
@@ -696,7 +699,7 @@ def doc_parse_old_and_ugly_format(doc: OpenDocumentSpreadsheet, filename: str = 
     }
 
     if filename:
-        print(f"Started parsing or file {filename}")
+        log.info(f"Started parsing file: {filename}")
 
     # Trying to guess sheet names
     sheets = doc_get_sheets(doc)
@@ -720,17 +723,17 @@ def doc_parse_old_and_ugly_format(doc: OpenDocumentSpreadsheet, filename: str = 
         else:
             pass
 
-    print(f'By now, we have these mappings ({len(sheet_map)} in total):')
+    log.info(f'By now, we have these mappings ({len(sheet_map)} in total):')
     for k in sheet_map:
-        print(f'\t{k} -> \'{get_sheet_name(sheet_map[k])}\'')
+        log.info(f'\t{k} -> \'{get_sheet_name(sheet_map[k])}\'')
 
     if len(sheet_map) != 6:
-        print('WARN: Wrong number of sheets found.')
+        log.info('WARN: Wrong number of sheets found.')
 
     h = UglyHelper(filename)
 
-    print("Guessed info from the file name:")
-    print(h)
+    log.info("Guessed info from the file name:")
+    log.info(h)
 
     # ed = input("Modify the data (Y/N)? ")
 
@@ -751,9 +754,9 @@ def doc_parse_old_and_ugly_format(doc: OpenDocumentSpreadsheet, filename: str = 
             'Гуманитарная площадка',
             'Неизвестная площадка',
         ]
-        print('Known departments:')
+        log.info('Known departments:')
         for i in range(len(deps)):
-            print(f'\t{i}. {deps[i]}')
+            log.info(f'\t{i}. {deps[i]}')
         h.department = deps[int(input('Choose the department: '))]
 
         adm_year = input('Enter the admission YEAR of the students: ')
@@ -766,42 +769,42 @@ def doc_parse_old_and_ugly_format(doc: OpenDocumentSpreadsheet, filename: str = 
         h.courses_stared = '01.09.' + cs_year
         h.courses_finished = '30.05.' + str(int(cs_year)+1)# input('Enter the YEAR when the courses finished: ')
 
-    print('OK, continuing...')
+    log.info('OK, continuing...')
 
     try:
         result['course'] = parse_ugly_do(sheet_map['do'], h)
     except Exception as e:
-        print(f"Failed to parse 'do' from {filename}")
+        log.info(f"Failed to parse 'do' from {filename}")
         pass
     try:
         result['course'] += parse_ugly_exams(sheet_map['exams'], h)
     except Exception as e:
-        print(f"Failed to parse 'exams' from {filename}")
+        log.info(f"Failed to parse 'exams' from {filename}")
         pass
     try:
         result['course'] += parse_ugly_summer(sheet_map['summer'], h)
     except Exception as e:
-        print(f"Failed to parse 'summer' from {filename}")
+        log.info(f"Failed to parse 'summer' from {filename}")
         pass
     try:
         result['seminar'] = parse_ugly_seminars(sheet_map['seminars'], h)
     except Exception as e:
-        print(f"Failed to parse 'seminar' from {filename}")
+        log.info(f"Failed to parse 'seminar' from {filename}")
         pass
     try:
         result['project'] = parse_ugly_projects(sheet_map['projects'], h)
     except Exception as e:
-        print(f"Failed to parse 'project' from {filename}")
+        log.info(f"Failed to parse 'project' from {filename}")
         pass
     try:
         result['olympiad'] = parse_ugly_olympiads(sheet_map['olympiads'], h)
     except Exception as e:
-        print(f"Failed to parse 'olympiad' from {filename}")
+        log.info(f"Failed to parse 'olympiad' from {filename}")
         pass
     try:
         result['education'] = generate_ugly_educations(result, h)
     except Exception as e:
-        print(f"Failed to parse 'education' from {filename}")
+        log.info(f"Failed to parse 'education' from {filename}")
         pass
 
     return result
@@ -889,6 +892,7 @@ class UglyHelper:
 
 
 def parse_ugly_do(sheet: Table, helper: UglyHelper) -> csv_data:
+    log = logging.getLogger(__name__)
     lst = sheet_to_list2d(sheet)
     (row, col) = find_fio(lst)
     lst = list2d_crop_before_point(lst, row, col)
@@ -935,7 +939,7 @@ def parse_ugly_do(sheet: Table, helper: UglyHelper) -> csv_data:
         except Exception as e:
             tb = ''.join(traceback.format_exception(None, e, e.__traceback__))
             tb_tabbed = tb.replace('\n', '\n\t')
-            print(f"Failed to parse record (do): {rec}",
+            log.info(f"Failed to parse record (do): {rec}",
                   f"\t{tb_tabbed}",
                   sep="\n"
               )
@@ -944,6 +948,7 @@ def parse_ugly_do(sheet: Table, helper: UglyHelper) -> csv_data:
 
 
 def parse_ugly_exams(sheet: Table, helper: UglyHelper) -> csv_data:
+    log = logging.getLogger(__name__)
     lst = sheet_to_list2d(sheet)
     (row, col) = find_fio(lst)
     lst = list2d_crop_before_point(lst, row, col)
@@ -991,7 +996,7 @@ def parse_ugly_exams(sheet: Table, helper: UglyHelper) -> csv_data:
         except Exception as e:
             tb = ''.join(traceback.format_exception(None, e, e.__traceback__))
             tb_tabbed = tb.replace('\n', '\n\t')
-            print(f"Failed to parse record (do): {rec}",
+            log.info(f"Failed to parse record (do): {rec}",
                   f"\t{tb_tabbed}",
                   sep="\n"
                   )
@@ -999,6 +1004,7 @@ def parse_ugly_exams(sheet: Table, helper: UglyHelper) -> csv_data:
 
 
 def parse_ugly_seminars(sheet: Table, helper: UglyHelper) -> csv_data:
+    log = logging.getLogger(__name__)
     lst = sheet_to_list2d(sheet)
     (row, col) = find_fio(lst)
     lst = list2d_crop_before_point(lst, row, col)
@@ -1048,7 +1054,7 @@ def parse_ugly_seminars(sheet: Table, helper: UglyHelper) -> csv_data:
         except Exception as e:
             tb = ''.join(traceback.format_exception(None, e, e.__traceback__))
             tb_tabbed = tb.replace('\n', '\n\t')
-            print(f"Failed to parse record (do): {rec}",
+            log.info(f"Failed to parse record (do): {rec}",
                   f"\t{tb_tabbed}",
                   sep="\n"
                   )
@@ -1056,6 +1062,7 @@ def parse_ugly_seminars(sheet: Table, helper: UglyHelper) -> csv_data:
 
 
 def parse_ugly_projects(sheet: Table, helper: UglyHelper) -> csv_data:
+    log = logging.getLogger(__name__)
     lst = sheet_to_list2d(sheet)
     (row, col) = find_fio(lst)
     lst = list2d_crop_before_point(lst, row, col)
@@ -1102,7 +1109,7 @@ def parse_ugly_projects(sheet: Table, helper: UglyHelper) -> csv_data:
         except Exception as e:
             tb = ''.join(traceback.format_exception(None, e, e.__traceback__))
             tb_tabbed = tb.replace('\n', '\n\t')
-            print(f"Failed to parse record (do): {rec}",
+            log.info(f"Failed to parse record (do): {rec}",
                   f"\t{tb_tabbed}",
                   sep="\n"
                   )
@@ -1110,6 +1117,7 @@ def parse_ugly_projects(sheet: Table, helper: UglyHelper) -> csv_data:
 
 
 def parse_ugly_olympiads(sheet: Table, helper: UglyHelper) -> csv_data:
+    log = logging.getLogger(__name__)
     lst = sheet_to_list2d(sheet)
     (row, col) = find_fio(lst)
     lst = list2d_crop_before_point(lst, row, col)
@@ -1151,7 +1159,7 @@ def parse_ugly_olympiads(sheet: Table, helper: UglyHelper) -> csv_data:
         except Exception as e:
             tb = ''.join(traceback.format_exception(None, e, e.__traceback__))
             tb_tabbed = tb.replace('\n', '\n\t')
-            print(f"Failed to parse record (do): {rec}",
+            log.info(f"Failed to parse record (do): {rec}",
                   f"\t{tb_tabbed}",
                   sep="\n"
                   )
@@ -1159,6 +1167,7 @@ def parse_ugly_olympiads(sheet: Table, helper: UglyHelper) -> csv_data:
 
 
 def parse_ugly_summer(sheet: Table, helper: UglyHelper) -> csv_data:
+    log = logging.getLogger(__name__)
     lst = sheet_to_list2d(sheet)
     (row, col) = find_fio(lst)
     lst = list2d_crop_before_point(lst, row, col)
@@ -1212,7 +1221,7 @@ def parse_ugly_summer(sheet: Table, helper: UglyHelper) -> csv_data:
         except Exception as e:
             tb = ''.join(traceback.format_exception(None, e, e.__traceback__))
             tb_tabbed = tb.replace('\n', '\n\t')
-            print(f"Failed to parse record (do): {rec}",
+            log.info(f"Failed to parse record (do)`: {rec}",
                   f"\t{tb_tabbed}",
                   sep="\n"
                   )
