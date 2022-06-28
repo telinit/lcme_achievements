@@ -823,21 +823,26 @@ class UglyHelper:
     department = None
 
     def __init__(self, filename):
+        log = logging.getLogger(__name__)
         if filename.lower().find('матем') >= 0:
             self.department = 'Математическая площадка'
             self.admission_class = '7'
-        if filename.lower().find('академ') >= 0:
+        elif filename.lower().find('академ') >= 0:
             self.department = 'Академическая площадка'
             self.admission_class = '5'
-        if filename.lower().find('инж') >= 0:
+        elif filename.lower().find('инж') >= 0:
             self.department = 'Инженерная площадка'
             self.admission_class = '7'
-        if filename.lower().find('био') >= 0:
+        elif filename.lower().find('био') >= 0:
             self.department = 'Биологическая площадка'
             self.admission_class = '7'
-        if filename.lower().find('гум') >= 0:
+        elif filename.lower().find('гум') >= 0:
             self.department = 'Гуманитарная площадка'
             self.admission_class = '8'
+        else:
+            log.warning('Unknown department!')
+            self.department = 'Неизвестная площадка'
+            self.admission_class = '7'
 
         if self.department == 'Академическая площадка':
             self.graduation_class = '6'
@@ -1185,8 +1190,8 @@ def parse_ugly_summer(sheet: Table, helper: UglyHelper) -> csv_data:
                 'Глава': '',
                 'Предмет': 'Не указан',
                 'Место проведения': 'Летняя школа',
-                'Начало': f'01.06.{fd}',             # if helper.courses_finished - the date
-                'Завершение': f'30.08.{fd}',
+                'Начало': f'01.06.{fd.year}',             # if helper.courses_finished - the date
+                'Завершение': f'30.08.{fd.year}',
                 'Фамилия преподавателя': 'Преподаватель?',
                 'Имя преподавателя': 'Преподаватель?',
                 'Отчество преподавателя': 'Преподаватель?',
@@ -1221,7 +1226,7 @@ def parse_ugly_summer(sheet: Table, helper: UglyHelper) -> csv_data:
         except Exception as e:
             tb = ''.join(traceback.format_exception(None, e, e.__traceback__))
             tb_tabbed = tb.replace('\n', '\n\t')
-            log.info(f"Failed to parse record (do)`: {rec}",
+            log.info(f"Failed to parse record (summer)`: {rec}",
                   f"\t{tb_tabbed}",
                   sep="\n"
                   )
