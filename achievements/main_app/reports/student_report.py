@@ -581,8 +581,19 @@ def write_do(student_id: int, doc: OpenDocumentText):
                 name=f"Frame_{random.randint(0,0xFFFFFFFF)}"
             )
 
+            p_style = Style(
+                name='',
+            )
+            p_style.addElement(
+                ParagraphProperties(
+                    margintop="0cm",
+                    marginbottom="0cm",
+                    textalign='center'
+                )
+            )
+
             frame_p = P(
-                stylename=doc.src_styles['styles']['body_title']
+                stylename=p_style
             )
             frame_p.addElement(frame)
 
@@ -1195,7 +1206,7 @@ def generate_document_for_student(id: int, document: OpenDocumentText = None, ad
         logger.info('Generting styles...')
         styles = make_styles()
 
-        logger.info('Style count: %d', )
+        logger.info('Style count: %d', sum(map(len, styles.values())))
 
         logger.info('Writing styles...')
         write_styles(report, styles)

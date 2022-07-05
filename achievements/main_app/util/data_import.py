@@ -1197,32 +1197,32 @@ def parse_ugly_summer(sheet: Table, helper: UglyHelper) -> csv_data:
                 'Отчество преподавателя': 'Преподаватель?',
                 'Экзамен': 'Нет'
             }
-            overaly_rec = {}
+            overlay_rec = {}
             for field in rec:
                 if field.find('дисциплина') >= 0:
-                    if 'Название' in overaly_rec:  # Flush if already present
+                    if 'Название' in overlay_rec:  # Flush if already present
                         r = dict(base_rec)
-                        r.update(overaly_rec)
+                        r.update(overlay_rec)
                         result.append(r)
-                        overaly_rec = {}
+                        overlay_rec = {}
                     if rec[field]:
-                        overaly_rec['Название'] = rec[field]
+                        overlay_rec['Название'] = rec[field]
                 elif field.find('часов') >= 0:
-                    overaly_rec['Количество часов'] = rec[field] or '0'
+                    overlay_rec['Количество часов'] = rec[field] or '0'
                 elif field.find('оценка') >= 0:
-                    overaly_rec['Оценка/зачёт'] = rec[field]
+                    overlay_rec['Оценка/зачёт'] = rec[field]
                 elif str_has_words(field, 'фамилия преподавателя'):
-                    overaly_rec['Фамилия преподавателя'] = rec[field]
+                    overlay_rec['Фамилия преподавателя'] = rec[field]
                 elif str_has_words(field, 'Имя преподавателя'):
-                    overaly_rec['Имя преподавателя'] = rec[field]
+                    overlay_rec['Имя преподавателя'] = rec[field]
                 elif str_has_words(field, 'Отчество преподавателя'):
-                    overaly_rec['Отчество преподавателя'] = rec[field]
+                    overlay_rec['Отчество преподавателя'] = rec[field]
 
-                if len(overaly_rec) >= 6:  # Flush if collected enough info
+                if len(overlay_rec) >= 6:  # Flush if collected enough info
                     r = dict(base_rec)
-                    r.update(overaly_rec)
+                    r.update(overlay_rec)
                     result.append(r)
-                    overaly_rec = {}
+                    overlay_rec = {}
         except Exception as e:
             tb = ''.join(traceback.format_exception(None, e, e.__traceback__))
             tb_tabbed = tb.replace('\n', '\n\t')

@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% load static %}
+
+
+
+{% block content %}
+<h1>Статистика</h1>
+<div class="col-lg-8">
+    {% for s in stats %}
+        <div>
+            <h3 class="mt-5">{{s.dep}}, {{s.year}} год выпуска.</h3>
+            <h4 class="mt-3">Участие в курсах</h4>
+            <table class="table table-striped table-hover">
+                <thead>
+                    <th></th><td>Максимум</td><td>Среднее арифметическое</td>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Количество курсов у учащегося</td><td>{{ s.max_count_courses }}</td><td>{{ s.avg_count_courses }}</td>
+                    </tr>
+                    <tr>
+                        <td>Часы курсов у учащегося</td><td>{{ s.max_sum_hours }}</td><td>{{ s.avg_sum_hours }}</td>
+                    </tr>
+                    <tr>
+                        <td>Олимпиады учащегося</td><td>{{ s.max_olymp_count }}</td><td></td>
+                    </tr>
+                </tbody>
+            </table>
+            <h4 class="mt-3">Награды за олимпиады</h4>
+            <table class="table table-striped table-hover">
+                <thead>
+                    <th>Звание</th><td>Награда</td><td>Количество</td>
+                </thead>
+                <tbody>
+                    {% for o in s.olymp_awards %}
+                        <tr>
+                            <td>{{o.title}}</td><td>{{o.prize}}</td><td>{{o.count_prize}}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+    {% if mode == 'bulk_edit' %}
+        <h1>Массовое редактирование</h1>
+        <p>Выберите существующее значение из списка или введите новое. Не забудьте отметить те поля, которые необходимо изменить. Остальные поля не будут затронуты</p>
+    {% else %}
+        <h1>Объединение записей</h1>
+        <p>Выберите существующее значение из списка или введите новое.</p>
+    {% endif %}
+
+    <div class="col-md-3 card">
+        <div class="row">
+            <div class="col">Тип записи:</div><div class="col">{{record_type}}</div>
+        </div>
+<!--        <div class="row">-->
+<!--            <div class="col"></div><div class="col"></div>-->
+<!--        </div>-->
+<!--        <div class="row">-->
+<!--            <div class="col"></div><div class="col"></div>-->
+<!--        </div>-->
+    </div>
+    <form method="post">
+        {% for field in fields %}
+
+        {% endfor %}
+    </form>
+
+
+{% endblock %}

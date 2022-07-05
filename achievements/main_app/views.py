@@ -8,7 +8,7 @@ from typing import Callable
 from django.core import serializers
 from django.core.files.uploadedfile import UploadedFile
 from django.db import transaction
-from django.db.models import Model
+from django.db.models import Model, Count, Sum, Max, Q
 from django.forms import Form
 from django.http import HttpResponse, FileResponse, HttpResponseBadRequest, HttpRequest, HttpResponseForbidden, \
     HttpResponseServerError
@@ -495,3 +495,77 @@ def edit_merge(request: HttpRequest):
 
 def edit_bulk(request: HttpRequest):
     return None
+
+
+def stats(request: HttpRequest):
+    stats_list = []
+
+    grad_dep = set(
+        Education.objects\
+            .order_by('-finish_date__year', 'department__name')\
+            .values_list('finish_date__year', 'department__name')
+    )
+
+    for year, dep in grad_dep:
+        graduated_students = set(
+            Education.objects\
+            .filter(finish_date__year=year, department__name=dep)\
+            .values_list('student__id', flat=True)
+        )
+        graduated_count = len(graduated_students)
+        sum_hours = list(map(
+            lambda rec: rec['sum_hours'],
+            CourseParticipation.objects
+                .filter(student__id__in=graduated_students, is_exam=False)
+                .values('student__id')
+                .annotate(sum_hours=Sum('hours'))
+        ))
+        max_sum_hours = max(sum_hours)
+        avg_sum_hours = sum(sum_hours) / len(sum_hours)
+        count_courses = list(map(
+            lambda rec: rec['count_courses'],
+            CourseParticipation.objects.filter(student__id__in=graduated_students).values('student__id').annotate(
+                count_courses=Count('id'))
+        ))
+        max_count_courses = max(count_courses)
+        avg_count_courses = sum(count_courses) / len(count_courses)
+
+        olymp_part = OlympiadParticipation.objects.filter(student__id__in=graduated_students)
+        olymp_count = list(map(
+            lambda rec: rec['olymp_count'],
+            olymp_part.values('student__id').annotate(
+                olymp_count=Count('id'))
+        ))
+        max_olymp_count = max(olymp_count)
+
+        olymp_awards_q1 = ~Q(title='')
+        olymp_awards_q2 = ~Q(prize='')
+        olymp_awards = olymp_part\
+            .filter(olymp_awards_q1 | olymp_awards_q2)\
+            .values('title', 'prize')\
+            .annotate(count_prize=Count('prize'))\
+            .order_by('-count_prize')
+
+        # olymp_awards = set(
+        #     map(
+        #         lambda o: f'{o["title"]} {o["prize"]}'.strip(),
+        #         olymp_awards
+        #     )
+        # )
+
+        # olymp_awards = list(filter(lambda s: s != '', olymp_awards))
+        # olymp_awards.sort()
+
+        stats_list.append({
+            'year': year,
+            'dep': dep,
+            'graduated_count': graduated_count,
+            'max_sum_hours': max_sum_hours,
+            'avg_sum_hours': avg_sum_hours,
+            'max_count_courses': max_count_courses,
+            'avg_count_courses': avg_count_courses,
+            'max_olymp_count': max_olymp_count,
+            'olymp_awards': olymp_awards
+        })
+
+    return render(request, 'stats.html', {'stats': stats_list})
