@@ -506,6 +506,7 @@ def stats(request: HttpRequest):
             .values_list('finish_date__year', 'department__name')
     )
 
+    i = 0
     for year, dep in grad_dep:
         graduated_students = set(
             Education.objects\
@@ -557,6 +558,7 @@ def stats(request: HttpRequest):
         # olymp_awards.sort()
 
         stats_list.append({
+            'anchor': f'id{i}',
             'year': year,
             'dep': dep,
             'graduated_count': graduated_count,
@@ -567,5 +569,6 @@ def stats(request: HttpRequest):
             'max_olymp_count': max_olymp_count,
             'olymp_awards': olymp_awards
         })
+        i += 1
 
     return render(request, 'stats.html', {'stats': stats_list})
