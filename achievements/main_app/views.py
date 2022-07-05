@@ -500,11 +500,10 @@ def edit_bulk(request: HttpRequest):
 def stats(request: HttpRequest):
     stats_list = []
 
-    grad_dep = set(
-        Education.objects\
-            .order_by('-finish_date__year', 'department__name')\
+    grad_dep = Education.objects\
+            .order_by('-finish_date__year', 'department__name') \
+            .distinct()\
             .values_list('finish_date__year', 'department__name')
-    )
 
     i = 0
     for year, dep in grad_dep:
