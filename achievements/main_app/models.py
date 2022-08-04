@@ -2,7 +2,7 @@ from typing import Any
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.db.models import F
+from django.db.models import F, TextChoices
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -22,8 +22,19 @@ def adv_join(sep: Any, objs: list[Any]) -> str:
 
 
 class User(AbstractUser):
+
+    class Gender(TextChoices):
+        MALE = 'm', 'Мужской'
+        FEMALE = 'f', 'Женский'
+
     bio = models.TextField(max_length=500, blank=True)
     birth_date = models.DateField("Дата рождения", null=True, blank=True)
+    gender = models.CharField(
+        "Пол",
+        null=True,
+        choices=Gender.choices,
+        max_length=2
+    )
     middle_name = models.CharField("Отчество", max_length=255, blank=True)
     phone_number = models.CharField("Телефон", max_length=255, blank=True)
 
