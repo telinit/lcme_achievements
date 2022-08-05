@@ -14,6 +14,24 @@ function dedupe_edu() {
     });
 }
 
+function check_names() {
+    $('#check_names_spinner').removeClass('d-none')
+    $.ajax({
+    url: "/tasks/check_names",
+    })
+    .done (function(data, textStatus, jqXHR) {
+          $('#modal_dialog .modal-title').html('Результаты');
+          $('#modal_dialog .modal-body').html(data);
+          $('#modal_dialog').modal('show');
+    })
+    .fail (function(jqXHR, textStatus, errorThrown) {
+          $('#check_names_msg').addClass('alert-danger').removeClass('d-none').text(jqXHR.responseText);
+    })
+    .always(function() {
+        $('#check_names_spinner').addClass('d-none')
+    });
+}
+
 function find_similar() {
     let t = $("#find_similar_obj_type").val()
     let l = $("#find_similar_limit").val()

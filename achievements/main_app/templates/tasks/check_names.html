@@ -1,0 +1,81 @@
+{% load static %}
+
+<h4>Добавлен пол человека</h4>
+
+<table class="table table-striped table-hover">
+    <thead>
+        <tr>
+            <th scope="col">ID</th>
+            <th scope="col">Имя</th>
+            <th scope="col">Фамилия</th>
+            <th scope="col">Пол</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for id, name, surname, gender in results %}
+        <tr
+                class="item"
+        >
+            <th scope="row">
+                <a href="/students/{{id}}" target="_blank">
+                    {{id}}
+                </a>
+            </th>
+            <td>{{name}}</td>
+            <td>{{surname}}</td>
+            <td>{{gender}}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h4>Возможные неправильные имена</h4>
+
+<table class="table table-striped table-hover">
+    <thead>
+        <tr>
+            <th scope="col">ID</th>
+            <th scope="col">Имя</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for id, name in wrong_names %}
+        <tr
+                class="item"
+        >
+            <th scope="row">
+                <a href="/students/{{id}}" target="_blank">
+                    {{id}}
+                </a>
+
+            </th>
+            <td>{{name}}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h4>Возможные неправильные фамилии</h4>
+
+<table class="table table-striped table-hover">
+    <thead>
+        <tr>
+            <th scope="col">ID</th>
+            <th scope="col">Фамилия</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for id, surname in wrong_surnames %}
+        <tr
+                class="item"
+        >
+            <th scope="row">
+                <a href="/students/{{id}}" target="_blank">
+                    {{id}}
+                </a>
+            </th>
+            <td>{{surname}}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

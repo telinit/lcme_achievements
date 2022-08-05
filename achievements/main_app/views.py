@@ -188,8 +188,91 @@ def import_(request: HttpRequest):
 def tasks(request):
     return render(request, 'tasks.html')
 
+def check_names(request):
+    db_ru_names = os.path.join(settings.BASE_DIR, 'main_app/static/russian_names.json')
+    db_ru_surnames = os.path.join(settings.BASE_DIR, 'main_app/static/russian_surnames.json')
+    db_foreign_names = os.path.join(settings.BASE_DIR, 'main_app/static/foreign_names.json')
 
-def print_(request):
+    name_gender = {}
+    surnames = set()
+
+    added_gender: list[Tuple[int, str, str, str]] = []
+    wrong_names: list[Tuple[int, str]] = []
+    wrong_surnames: list[Tuple[int, str]] = []
+
+    for ndb in [db_ru_names, db_foreign_names]:
+        f = open(ndb, 'r', encoding='utf8')
+        js = json.load(f)
+        for o in js:
+            if 'Sex' in o:
+                gender = 'M' if o['Sex'] == 'М' else 'F'  # Those are different 'M' letters (en and ru)
+            elif 'gender' in o:
+                gender = 'M' if o['gender'] == 'Male' else 'F'
+            else:
+                continue
+
+            if 'Name' in o:
+                name = str(o['Name'])
+            elif 'name' in o:
+                name = str(o['name'])
+            else:
+                continue
+
+            name_gender[name.capitalize()] = gender
+
+    for sdb in [db_ru_surnames]:
+        f = open(sdb, 'r', encoding='utf8')
+        js = json.load(f)
+
+        for o in js:
+            if 'Surname' in o:
+                surnames.add( str(o['Surname']).capitalize() )
+            else:
+                continue
+
+    all_names = User.objects\
+        .all()\
+        .values('id', 'first_name', 'last_name', 'gender')
+
+    for n in all_names:
+        (id, first_name, last_name, gender) = (
+            n['id'], n['first_name'], n['last_name'], n['gender']
+        )
+        new_gender = name_gender[first_name] if first_name in name_gender else None
+        print(id, first_name, last_name, gender, new_gender)
+        if not gender and new_gender:
+            added_gender.append((id, first_name, last_name, new_gender))
+            u = User.objects\
+                .get(id=id)
+
+            u.gender = new_gender
+            u.save()
+
+        if first_name not in name_gender.keys():
+            wrong_names.append((id, first_name))
+
+        if last_name not in surnames:
+            wrong_surnames.append((id, last_name))
+
+    return render(
+        request,
+        'tasks/check_names.html',
+        {
+            'added_gender': added_gender,
+            'wrong_names': wrong_names,
+            'wrong_surnames': wrong_surnames
+        }
+    )
+
+
+def print_index(request):
+    return render(
+        request,
+        'print/index.html'
+    )
+
+
+def print_everything(request):
     dep_years_ = {}
 
     for edu in Education.objects.all():
@@ -276,11 +359,19 @@ def print_dep_year(request, dep, year, format_):
 
 
 def student_profile(request, id):
-    user = User.objects.filter(id=id)
+    user = User.objects.get(id=id)
     if not user:
         return render(request, "errors/404.html", {})
     else:
-        user = user[0]
+        user = user
+
+    if user.gender == 'M':
+        user.gender_print = 'Мужской'
+    elif user.gender == 'F':
+        user.gender_print = 'Женский'
+    else:
+        user.gender_print = 'Не указан'
+
     edu = Education.objects.filter(student__id=id)
     cp = CourseParticipation.objects.filter(student__id=id, is_exam=False)
     ex = CourseParticipation.objects.filter(student__id=id, is_exam=True)
