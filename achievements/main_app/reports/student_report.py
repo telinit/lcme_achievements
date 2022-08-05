@@ -433,6 +433,8 @@ def write_title(student_id: int, doc: OpenDocumentText):
     logo_paragraph.addElement(logo_frame)
     doc.text.addElement(logo_paragraph)
 
+    student = User.objects.get(pk=student_id)
+
     # First heading
     t1 = ["",
           "",
@@ -467,7 +469,7 @@ def write_title(student_id: int, doc: OpenDocumentText):
 
     doc.text.addElement(t3_p)
 
-    student = User.objects.get(pk=student_id)
+
     edu_start = min(map(lambda e: e.start_date.year, edus))
     edu_finish = max(map(lambda e: e.finish_date.year, edus))
 
@@ -493,6 +495,91 @@ def write_title(student_id: int, doc: OpenDocumentText):
             f"Номер документа: {student_id:04d}-{y}",
             f"Год выдачи: {y} год",
             "г. Санкт-Петербург"
+        ],
+        doc.src_styles['styles']['body_title']
+    )
+
+    doc.text.addElement(t5_p)
+
+
+def write_summer_title(student_id: int, date_start: datetime, doc: OpenDocumentText):
+    # Logo
+    logo_path = pathlib.Path(
+        static_path,
+        'logo_summer.png'
+    ).resolve()
+    logo = doc.addPicture(str(logo_path))
+    logo_frame = Frame(
+        width="4.92cm",
+        height="4.26cm",
+        # x="5cm",
+        # y="1cm",
+        anchortype="as-char",
+        stylename=doc.src_styles['styles']['logo']
+    )
+    logo_frame.addElement(Image(href=logo))
+    logo_paragraph = P(stylename=doc.src_styles['styles']['body_title'])
+    logo_paragraph.addElement(logo_frame)
+    doc.text.addElement(logo_paragraph)
+
+    student = User.objects.get(pk=student_id)
+
+    # First heading
+    t1 = ["",
+          "",
+          "",
+          "",
+          "ДОСТИЖЕНИЯ",
+          "в проектной и исследовательской деятельности",
+          "а также участие в семинарах",
+          "",
+          "(зачетная книжка)"]
+
+    t1_p = strings_to_breaks(t1, doc.src_styles['styles']['h2_title'])
+    doc.text.addElement(t1_p)
+
+    t2 = ["",
+          "",
+          f"{'учащейся' if student.gender == User.Gender.FEMALE else 'учащегося'} летней научной школы, проводимой",
+          "«ЛАБОРАТОРИЕЙ НЕПРЕРЫВНОГО МАТЕМАТИЧЕСКОГО ОБРАЗОВАНИЯ»",
+          ""]
+
+    t2_p = strings_to_breaks(t2, doc.src_styles['styles']['body_title'])
+    doc.text.addElement(t2_p)
+
+    edus = Education.objects.filter(student__id=student_id)
+
+    t3 = list(map(lambda e: e.department.name, edus))
+
+    if len(t3) == 0:
+        t3 = ['Без обучения в ЛНМО']
+
+    t3_p = strings_to_breaks(t3, doc.src_styles['styles']['body_title'], prefix="(", suffix=")", sep=",")
+
+    doc.text.addElement(t3_p)
+
+    t4_p = strings_to_breaks(
+        [
+            "",
+            f"{student.last_name} {student.first_name} {student.middle_name}",
+            ""
+        ], doc.src_styles['styles']['h1_title'])
+
+    doc.text.addElement(t4_p)
+
+    y = datetime.now().year
+
+    t5_p = strings_to_breaks(
+        [
+            "",
+            "",
+            "",
+            "",
+            "",
+            f"{date_start.year} год",
+            f"Номер документа: S-{student_id:04d}-{y}",
+            f"Год выдачи: {y} год",
+            "г. Поставы"
         ],
         doc.src_styles['styles']['body_title']
     )
@@ -695,6 +782,51 @@ def write_exams(student_id: int, doc: OpenDocumentText):
             doc.text.addElement(frame_p)
     # if not have_data:
     #     doc.text.addElement(P(text="Нет данных", stylename=doc.src_styles['styles']['body_title']))
+
+
+def write_summer_school_with_start_date(student_id: int, start_date: datetime, doc: OpenDocumentText):
+    courses = CourseParticipation.objects \
+        .filter(
+        student__id=student_id,
+        started__gte=start_date,
+        # started__lte=start_date + timedelta(weeks=3*4),
+        course__location__name="Летняя школа"
+    )
+    doc.text.addElement(P(text="Участие в работе Летней научной школы ЛНМО",
+                          stylename=doc.src_styles['styles']['h1_title_break_before']))
+    title = strings_to_breaks(["",
+                               f"{start_date.year} год"],
+                              doc.src_styles['styles']['h2_title'])
+    table_data = [['Название', 'Часы', 'Оценка', 'ФИО преподавателя']]
+    for c in courses:
+        table_data.append([
+            f'{c.course.name}{", " if c.course.chapter != "" else ""}{c.course.chapter}',
+            c.hours,
+            c.mark,
+            f"{c.teacher.last_name} {c.teacher.first_name} {c.teacher.middle_name}"
+        ])
+
+    table = make_table(table_data, doc=doc, column_width=['6cm', '1.5cm', '2cm', '7.5cm'],
+                       p_style_header=doc.src_styles['styles']['body_bold_center'], style_custom=[
+            lambda object_type, table_width, table_height, x, y, data: (doc.src_styles['styles']['body_title'],
+                                                                        "styles") if object_type == 'paragraph' and y > 0 and 1 <= x <= 2 else None])
+
+    frame = make_frame(
+        [title, table],
+        anchortype="paragraph",
+        width="13cm",
+        # height="5cm",
+        # zindex="0",
+        stylename=doc.src_styles['auto_styles']['frame_style'],
+        name=f"Frame_{random.randint(0, 0xFFFFFFFF)}"
+    )
+
+    frame_p = P(
+        stylename=doc.src_styles['styles']['body_title']
+    )
+    frame_p.addElement(frame)
+
+    doc.text.addElement(frame_p)
 
 
 def write_summer_school(student_id: int, doc: OpenDocumentText):
@@ -1218,6 +1350,31 @@ def generate_document_for_student(id: int, document: OpenDocumentText = None, ad
     write_seminars(id, report)
     write_projects(id, report)
     write_olympiads(id, report)
+
+    if add_padding:
+        pad = padding_length if padding_length >= 0 else document_get_missing_padding_count(report)
+        write_padding(pad, report)
+
+    return report
+
+
+def generate_document_for_summer_student(id: int, start_date: datetime, document: OpenDocumentText = None, add_padding=True, padding_length=-1):
+    logger = logging.getLogger(__name__)
+    report = document or OpenDocumentText()
+
+    logger.info('Generating a document for a summer school\'s student with ID = %d', id)
+
+    if not document:
+        logger.info('Generting styles...')
+        styles = make_styles()
+
+        logger.info('Style count: %d', sum(map(len, styles.values())))
+
+        logger.info('Writing styles...')
+        write_styles(report, styles)
+
+    write_summer_title(id, start_date, report)
+    write_summer_school_with_start_date(id, start_date, report)
 
     if add_padding:
         pad = padding_length if padding_length >= 0 else document_get_missing_padding_count(report)

@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<h1>Печать</h1>
+<div class="col-sm-5 ms-3">
+
+    <div class="btn-group-vertical">
+
+        <a class="btn btn-outline-secondary" href="/print/everything">
+            <span class="row align-items-center">
+                <i class="bi bi-journal-medical fs-3 text-primary col-auto"></i>
+                <span class="col">
+                    Общая зачетная книжка
+                </span>
+            </span>
+        </a>
+
+        <a class="btn btn-outline-secondary" href="/print/summer">
+            <span class="row align-items-center">
+                <div class="col-auto m-0 p-0 ps-2">
+                    <i class="bi bi-tree-fill fs-3" style="color: #289A22;"></i>
+                    <i class="bi bi-sun fs-5" style="position:relative; left: -1em; top: -0.5em; z-index: -1; color: #FDF034"></i>
+                </div>
+                <span class="col ps-1">
+                    Зачетка по летней школе
+                </span>
+            </span>
+        </a>
+
+    </div>
+
+</div>
+{% endblock %}

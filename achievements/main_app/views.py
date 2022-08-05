@@ -1,3 +1,5 @@
+import datetime
+import json
 import logging
 import os
 import tempfile
@@ -5,6 +7,7 @@ from ctypes import ArgumentError
 from io import FileIO, BytesIO
 from typing import Callable
 
+from django.conf import settings
 from django.core import serializers
 from django.core.files.uploadedfile import UploadedFile
 from django.db import transaction
@@ -18,7 +21,7 @@ from fuzzywuzzy import fuzz
 
 from .forms import CourseEdit
 from .reports.student_report import generate_document_for_many_students, document_to_odt_data, \
-    generate_document_for_student, odt_data_to_pdf_reader
+    generate_document_for_student, odt_data_to_pdf_reader, generate_document_for_summer_student
 from .util.data_import import *
 from .util.util import group_by_type, add_to_dict_multival_set
 import zipfile
@@ -186,7 +189,8 @@ def import_(request: HttpRequest):
 
 
 def tasks(request):
-    return render(request, 'tasks.html')
+    return render(request, 'tasks/index.html')
+
 
 def check_names(request):
     db_ru_names = os.path.join(settings.BASE_DIR, 'main_app/static/russian_names.json')
@@ -290,11 +294,92 @@ def print_everything(request):
 
     return render(
         request,
-        'print.html',
+        'print/everything.html',
         {
             'dep_years': dep_years
         }
     )
+
+
+def print_summer(request, start_timestamp=None):
+    log = logging.getLogger(__name__)
+
+    log.info('Making list of summer school sessions')
+    start_students = CourseParticipation.objects\
+        .filter(course__location__name="Летняя школа")\
+        .values('started')\
+        .annotate(count=Count('student', distinct=True))
+
+    by_year = {}
+    for ss in start_students:
+        add_to_dict_multival(by_year, ss['started'].year, ss)
+
+    return render(
+        request,
+        'print/summer.html',
+        {
+            'by_year': by_year
+        }
+    )
+
+
+def print_summer_starting_on(request, start_timestamp: str = '', format_: str = 'pdf'):
+    log = logging.getLogger(__name__)
+    try:
+        start_date = datetime.fromtimestamp(float(start_timestamp.replace(',', '.'))).date()
+    except Exception as e:
+        log.info(f'Got a bad timestamp argument: ${start_timestamp}')
+        return HttpResponseBadRequest(b'Bad timestamp')
+    log.info(f'Generating reports for summer school starting at ${start_date}')
+    student_ids = CourseParticipation.objects \
+        .filter(
+        course__location__name="Летняя школа",
+        started=start_date
+    ) \
+        .values_list('student__id', flat=True)\
+        .distinct()
+
+    zip_file_name = f'Зачетные книжки летней школы от {start_date}.zip'
+    log.info('ZIP file name: %s', zip_file_name)
+
+    zip_buff = BytesIO()
+    zip = zipfile.ZipFile(zip_buff, 'w', zipfile.ZIP_DEFLATED)
+
+    for i, id in enumerate(student_ids):
+        student = User.objects.get(id=id)
+
+        log.info('Generating a report for student with id = %d, name = %s %s %s', id, student.last_name,
+                 student.first_name, student.middle_name)
+
+        log.info('Generating the document')
+        doc = generate_document_for_summer_student(id, start_date)
+
+        log.info('Converting it to ODT')
+        odt = document_to_odt_data(doc)
+
+        if format_ == 'odt':
+            data = odt
+        else:
+            log.info('Converting it to PDF')
+            data = odt_data_to_pdf_reader(odt).stream
+            data.seek(0)
+
+        file_name = f'{i} {student.last_name} {student.first_name} {student.middle_name}.{format_}'
+
+        log.info('Adding the file to the ZIP archive: %s', file_name)
+        zip.writestr(file_name, data.read())
+
+    zip.close()
+
+    log.info('Done creating the archive: length = %d', zip_buff.tell())
+    zip_buff.seek(0)
+
+    response = FileResponse(
+        zip_buff,
+        content_type='application/zip',
+        filename=zip_file_name,
+    )
+    return response
 
 
 def print_dep_year(request, dep, year, format_):
@@ -524,7 +609,7 @@ def find_similar_objects(request, obj_type: str, method: str, limit: int):
         results
     )
 
-    return render(request, 'similar_objects.html', {'results': results_objs})
+    return render(request, 'tasks/similar_objects.html', {'results': results_objs})
 
 
 def find_nearest_objects(
