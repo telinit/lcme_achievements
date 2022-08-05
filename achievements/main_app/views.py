@@ -314,6 +314,9 @@ def print_summer(request, start_timestamp=None):
     for ss in start_students:
         add_to_dict_multival(by_year, ss['started'].year, ss)
 
+    by_year = list(by_year.items())
+    by_year.sort(key=lambda p: -p[0])
+
     return render(
         request,
         'print/summer.html',
