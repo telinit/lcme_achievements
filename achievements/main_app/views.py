@@ -533,7 +533,7 @@ def print_student_summer(request, sid, start_timestamp, format_):
         log.info('Converting the report to PDF')
         data = odt_data_to_pdf_reader(report).stream
 
-    filename = f"Зачетка {student.last_name} {student.first_name} {student.middle_name} {datetime.now().year} год.{format_}"
+    filename = f"ЛНШ {start_date.year}, {student.last_name} {student.first_name} {student.middle_name}.{format_}"
     content_type = 'application/vnd.oasis.opendocument.text' if format_ == 'odt' else 'application/pdf'
 
     log.info('Document length: %d bytes, filename = %s, content_type = %s', data.tell(), filename, content_type)

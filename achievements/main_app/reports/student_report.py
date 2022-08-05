@@ -451,7 +451,7 @@ def write_title(student_id: int, doc: OpenDocumentText):
 
     t2 = ["",
           "",
-          f"${'учащейся' if student.gender == User.Gender.FEMALE else 'учащегося'} частного общеобразовательного учреждения дополнительного образования",
+          f"${'учащейся' if student.gender == 'F' else 'учащегося'} частного общеобразовательного учреждения дополнительного образования",
           "«ЛАБОРАТОРИЯ НЕПРЕРЫВНОГО МАТЕМАТИЧЕСКОГО ОБРАЗОВАНИЯ»",
           ""]
 
@@ -540,7 +540,7 @@ def write_summer_title(student_id: int, date_start: datetime, doc: OpenDocumentT
 
     t2 = ["",
           "",
-          f"{'учащейся' if student.gender == User.Gender.FEMALE else 'учащегося'} летней научной школы, проводимой",
+          f"{'учащейся' if student.gender == 'F' else 'учащегося'} летней научной школы, проводимой",
           "«ЛАБОРАТОРИЕЙ НЕПРЕРЫВНОГО МАТЕМАТИЧЕСКОГО ОБРАЗОВАНИЯ»",
           ""]
 
