@@ -758,7 +758,7 @@ def stats(request: HttpRequest):
             olymp_part.values('student__id').annotate(
                 olymp_count=Count('id'))
         ))
-        max_olymp_count = max(olymp_count)
+        max_olymp_count = max(olymp_count) if olymp_count else 0
 
         olymp_awards_q1 = ~Q(title='')
         olymp_awards_q2 = ~Q(prize='')
