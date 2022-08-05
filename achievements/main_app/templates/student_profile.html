@@ -1,9 +1,10 @@
 {% extends 'base.html' %}
 {% load static %}
 
-
-
 {% block content %}
+
+<script src="{% static '/js/profile.js' %}"></script>
+
 <h1>Учащийся {{user.last_name|capfirst}} {{user.first_name|capfirst}} {{user.middle_name|capfirst}}</h1>
 
 
@@ -38,15 +39,26 @@
 
     </div>
     <div class="col-sm-6 col-md-6 col-lg-3 p-3">
-        <div class="card card-body">
+        <div class="card card-body align-items-center">
             <h6>Скачать зачетную книжку</h6>
-            <div>
-                <a href="/print/student/{{user.id}}/pdf" class="btn btn-outline-primary text-start" role="button"><i class="bi bi-file-earmark-pdf fs-4"></i>PDF</a>
-                <a href="/print/student/{{user.id}}/odt" class="btn btn-outline-primary text-start " role="button"><i class="bi bi-file-earmark-text fs-4"></i>ODT</a>
+
+            <div class="dropdown">
+              <button class="btn btn-primary m-2 dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+                Выберите тип
+              </button>
+              <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+                <li><a class="dropdown-item" href="#" onclick="select_doc_type('everything', undefined,'{{user.id}}')">Общая</a></li>
+                  {% for d in summer_dates %}
+                        <li><a class="dropdown-item" href="#" onclick="select_doc_type('summer', '{{d.timestamp}}', '{{user.id}}')">Летняя школа (смена {{ d.date }})</a></li>
+                  {% endfor %}
+              </ul>
             </div>
 
+            <div id="download" class="d-none m-2">
+                <a id="download_pdf" href="/print/student/{{user.id}}/pdf" class="btn btn-outline-primary text-start p-1" role="button"><i class="bi bi-file-earmark-pdf fs-4"></i>PDF</a>
+                <a id="download_odt" href="/print/student/{{user.id}}/odt" class="btn btn-outline-primary text-start p-1" role="button"><i class="bi bi-file-earmark-text fs-4"></i>ODT</a>
+            </div>
         </div>
-
     </div>
 </div>
 

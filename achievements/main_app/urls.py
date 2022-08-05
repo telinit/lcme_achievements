@@ -21,6 +21,7 @@ urlpatterns = [
     path('tasks/edit/merge', views.edit_merge),
     path('tasks/edit/bulk', views.edit_bulk),
     path('print/student/<int:sid>/<str:format_>', views.student_report),
+    path('print/student_summer/<int:sid>/<str:start_timestamp>/<str:format_>', views.print_student_summer),
     path('stats', views.stats),
 ]
 

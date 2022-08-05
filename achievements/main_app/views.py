@@ -463,6 +463,10 @@ def student_profile(request, id):
     sp = SeminarParticipation.objects.filter(student__id=id)
     pp = ProjectParticipation.objects.filter(student__id=id)
     op = OlympiadParticipation.objects.filter(student__id=id)
+    summer_dates = CourseParticipation.objects\
+        .filter(student__id=id, course__location__name="Летняя школа")\
+        .values_list('started', flat=True)\
+        .distinct()
     return render(request, 'student_profile.html', {
         'id': id,
         'user': user,
@@ -472,6 +476,7 @@ def student_profile(request, id):
         'seminar_participations': sp,
         'project_participations': pp,
         'olympiad_participations': op,
+        'summer_dates': summer_dates
     })
 
 
@@ -482,6 +487,44 @@ def student_report(request, sid, format_):
 
     log.info('Generating the report')
     report = document_to_odt_data(generate_document_for_student(sid))
+    student = User.objects.get(pk=sid)
+
+    if format_ == 'odt':
+        data = report
+    else:
+        log.info('Converting the report to PDF')
+        data = odt_data_to_pdf_reader(report).stream
+
+    filename = f"Зачетка {student.last_name} {student.first_name} {student.middle_name} {datetime.now().year} год.{format_}"
+    content_type = 'application/vnd.oasis.opendocument.text' if format_ == 'odt' else 'application/pdf'
+
+    log.info('Document length: %d bytes, filename = %s, content_type = %s', data.tell(), filename, content_type)
+
+    data.seek(0)
+
+    response = FileResponse(
+        data,
+        content_type=content_type,
+        filename=filename,
+        as_attachment=True
+    )
+    return response
+
+
+def print_student_summer(request, sid, start_timestamp, format_):
+    log = logging.getLogger(__name__)
+    try:
+        start_date = datetime.fromtimestamp(float(start_timestamp.replace(',', '.'))).date()
+    except Exception as e:
+        log.info(f'Got a bad timestamp argument: ${start_timestamp}')
+        return HttpResponseBadRequest(b'Bad timestamp')
+
+    log = logging.getLogger(__name__)
+    if format_ not in ['pdf', 'odt']:
+        return HttpResponseBadRequest()
+
+    log.info('Generating the report')
+    report = document_to_odt_data(generate_document_for_summer_student(sid, start_date))
     student = User.objects.get(pk=sid)
 
     if format_ == 'odt':
